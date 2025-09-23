@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "windows-gcc-x64",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:\\dev\\lib\\eigen"
+            ],
+            "browse": {
+                "path": [
+                    "C:/dev/lib/eigen/Eigen",
+                    "C:/dev/lib/eigen/unsupported"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "compilerPath": "C:/msys64/ucrt64/bin/gcc.exe",
+            "cStandard": "${default}",
+            "cppStandard": "${default}",
+            "intelliSenseMode": "windows-gcc-x64",
+            "compilerArgs": [
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}

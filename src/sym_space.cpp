@@ -1,6 +1,7 @@
 #include "sym_space.h"
 #include<cmath>
 #include<complex>
+#include<bit>
 
 static constexpr double sqrt3 = 1.73205080756887;
 static constexpr std::complex<double> xi = std::complex<double>(0.5 * (sqrt3 - 1), 0.5 * (sqrt3 - 1));
@@ -253,7 +254,7 @@ Eigen::Tensor<double, 3> get_Gfunc(const unsigned int &n_qubits, const unsigned 
     return Gfunc;
 }
 
-// Returns the Gaussian envelope of the state SymQ in Gfunc to avoid copying
+// Returns the Gaussian envelope of the state SymQ in Gfunc
 void get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ, Eigen::Tensor<double, 3> &Gfunc) {
     double Sx, Sy, Sz;
     Eigen::Matrix3d correlation_matrix = get_correlation_matrix(n_qubits, qubitstate_size, symQ, Sx, Sy, Sz);
@@ -267,5 +268,16 @@ void get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size
     });
 }
 
-// To be implemented
-Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, Eigen::MatrixXd &Qfunc);
+// Returns the symmetrized Q function for a given state (specified by its Q function)
+Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, Eigen::MatrixXd &Qfunc) {
+    Eigen::Tensor<double, 3> symQ(n_qubits + 1, n_qubits + 1, n_qubits + 1);
+
+    unsigned int halpha = 0;
+    for(unsigned int alpha = 0; alpha < qubitstate_size; alpha++) {
+        halpha = std::popcount(alpha);
+        for (unsigned int beta = 0; beta < qubitstate_size; beta++) {
+            symQ(halpha, std::popcount(beta), std::popcount(alpha^beta)) += Qfunc(alpha, beta);
+        }
+    }
+    return symQ;
+}
