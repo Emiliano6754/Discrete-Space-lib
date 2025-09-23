@@ -238,30 +238,32 @@ Eigen::Matrix3d get_correlation_matrix(const unsigned int &n_qubits, const unsig
     return (Gamma + Lambda) / (6.0 * n_qubits);
 }
 
-// Returns the Gaussian envelope of the state SymQ
+// Returns the Gaussian envelope of the state SymQ. Needs checking, the determinant of correlation_matrix may sometimes be negative, which leads to the sqrt to be undefined.
 Eigen::Tensor<double, 3> get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ) {
     Eigen::Tensor<double, 3> Gfunc(n_qubits + 1, n_qubits + 1, n_qubits + 1);
+    Gfunc.setZero();
     double Sx, Sy, Sz;
     Eigen::Matrix3d correlation_matrix = get_correlation_matrix(n_qubits, qubitstate_size, symQ, Sx, Sy, Sz);
     Eigen::Matrix3d precision_matrix = correlation_matrix.inverse();
     Eigen::Vector3d x_bar = {0.5 - Sx/(2 * sqrt3 * n_qubits), 0.5 - Sy/(2 * sqrt3 * n_qubits), 0.5 - Sz/(2 * sqrt3 * n_qubits)};
     Eigen::Vector3d x;
-    double coeff = (1 << (n_qubits + 1)) / ( EIGEN_PI * n_qubits * std::sqrt(EIGEN_PI * n_qubits) * correlation_matrix.determinant() );
+    double coeff = (1 << (n_qubits + 1)) / ( EIGEN_PI * n_qubits * std::sqrt( EIGEN_PI * n_qubits * correlation_matrix.determinant() ) );
     sym_space_loop(n_qubits, [&](int &m, int &n, int &k) {
         x = {static_cast<double>(m)/n_qubits, static_cast<double>(n)/n_qubits, static_cast<double>(k)/n_qubits};
-        Gfunc(m, n, k) = coeff * std::exp(- static_cast<double>(n_qubits) * (x - x_bar).transpose() * correlation_matrix * (x - x_bar) );
+        Gfunc(m, n, k) = coeff * std::exp(- static_cast<double>(n_qubits) * (x - x_bar).transpose() * precision_matrix * (x - x_bar) );
     });
     return Gfunc;
 }
 
 // Returns the Gaussian envelope of the state SymQ in Gfunc
 void get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ, Eigen::Tensor<double, 3> &Gfunc) {
+    Gfunc.setZero();
     double Sx, Sy, Sz;
     Eigen::Matrix3d correlation_matrix = get_correlation_matrix(n_qubits, qubitstate_size, symQ, Sx, Sy, Sz);
     Eigen::Matrix3d precision_matrix = correlation_matrix.inverse();
     Eigen::Vector3d x_bar = {0.5 - Sx/(2 * sqrt3 * n_qubits), 0.5 - Sy/(2 * sqrt3 * n_qubits), 0.5 - Sz/(2 * sqrt3 * n_qubits)};
     Eigen::Vector3d x;
-    double coeff = (1 << (n_qubits + 1)) / ( EIGEN_PI * n_qubits * std::sqrt(EIGEN_PI * n_qubits * correlation_matrix.determinant()) );
+    double coeff = (1 << (n_qubits + 1)) / ( EIGEN_PI * n_qubits * std::sqrt( EIGEN_PI * n_qubits * correlation_matrix.determinant() ) );
     sym_space_loop(n_qubits, [&](int &m, int &n, int &k) {
         x = {static_cast<double>(m)/n_qubits, static_cast<double>(n)/n_qubits, static_cast<double>(k)/n_qubits};
         Gfunc(m, n, k) = coeff * std::exp(- static_cast<double>(n_qubits) * (x - x_bar).transpose() * precision_matrix * (x - x_bar) );
@@ -271,6 +273,7 @@ void get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size
 // Returns the symmetrized Q function for a given state (specified by its Q function)
 Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, Eigen::MatrixXd &Qfunc) {
     Eigen::Tensor<double, 3> symQ(n_qubits + 1, n_qubits + 1, n_qubits + 1);
+    symQ.setZero();
 
     unsigned int halpha = 0;
     for(unsigned int alpha = 0; alpha < qubitstate_size; alpha++) {
