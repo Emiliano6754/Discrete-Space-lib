@@ -1,4 +1,7 @@
 #include "Qfunc.h"
+#include<iostream>
+#include<fstream>
+#include<filesystem>
 
 // Stores all powers of xi from 0 t n_qubits in xi_buffer. Assumes xi_buffer already allocates enough memory
 inline void initialize_xi_buffer(const unsigned int &n_qubits, const std::complex<double> &xi, std::complex<double>* xi_buffer) {
@@ -32,4 +35,27 @@ Eigen::MatrixXd pure_Qfunc_from_operational(const unsigned int &n_qubits, const 
         }
     }
     return Qfunc;
+}
+
+// Prints the Qfunc to console as a function of alpha and beta for debugging purposes 
+void print_Qfunc(const Eigen::MatrixXd &Qfunc) {
+    const unsigned int n_qubits = 4;
+    const unsigned int qubitstate_size = 1<<n_qubits;
+    for (unsigned int alpha = 0; alpha < qubitstate_size; alpha++) {
+            for (unsigned int beta = 0; beta < qubitstate_size; beta++) {
+                std::cout << "Q(" << alpha << "," << beta << ") = " << Qfunc(alpha,beta) << std::endl;
+            }
+        }
+}
+
+// Saves the Qfunc to filename in numpy style
+void save_Qfunc(const Eigen::MatrixXd &Qfunc, const std::string &filename) {
+    const std::filesystem::path cwd = std::filesystem::current_path();
+    std::ofstream output_file(cwd.string()+"/data/Qfuncs/"+filename,std::ofstream::out|std::ofstream::ate|std::ofstream::trunc);
+    Eigen::IOFormat FullPrecision(Eigen::FullPrecision,0,"\n");
+    if (output_file.is_open()) {
+        output_file << Qfunc.format(FullPrecision) << std::endl;
+    } else {
+        std::cout << "Could not save Qfunc" << std::endl;
+    }
 }

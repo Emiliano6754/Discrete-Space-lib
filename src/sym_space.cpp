@@ -2,6 +2,9 @@
 #include<cmath>
 #include<complex>
 #include<bit>
+#include<fstream>
+#include<iostream>
+#include<filesystem>
 
 static constexpr double sqrt3 = 1.73205080756887;
 static constexpr std::complex<double> xi = std::complex<double>(0.5 * (sqrt3 - 1), 0.5 * (sqrt3 - 1));
@@ -283,4 +286,16 @@ Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned i
         }
     }
     return symQ;
+}
+
+// Saves the symQfunc in filename using a csv format
+void save_symQfunc(const Eigen::Tensor<double,3> &symQfunc, const std::string &filename) {
+    const std::filesystem::path cwd = std::filesystem::current_path();
+    std::ofstream output_file(cwd.string()+"/data/symQfuncs/"+filename,std::ofstream::out|std::ofstream::ate|std::ofstream::trunc);
+    if (output_file.is_open()) {
+        Eigen::TensorIOFormat csv_format = Eigen::TensorIOFormat(/*separator=*/{",\n", ",\n"}, /*prefix=*/{"", ""}, /*suffix=*/{"", ""}, /*precision=*/Eigen::FullPrecision, /*flags=*/0, /*tenPrefix=*/"", /*tenSuffix=*/"");
+        output_file << symQfunc.format(csv_format);
+    } else {
+        std::cout << "Could not save symQfunc" << std::endl;
+    }
 }

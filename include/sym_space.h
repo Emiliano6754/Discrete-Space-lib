@@ -92,4 +92,7 @@ void get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size
 // Returns the symmetrized Q function for a given state (specified by its Q function)
 Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, Eigen::MatrixXd &Qfunc);
 
+// Saves the symQfunc in filename using a csv format
+void save_symQfunc(const Eigen::Tensor<double,3> &symQfunc, const std::string &filename);
+
 #endif
