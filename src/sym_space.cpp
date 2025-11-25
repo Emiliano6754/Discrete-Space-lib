@@ -274,7 +274,7 @@ void get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size
 }
 
 // Returns the symmetrized Q function for a given state (specified by its Q function)
-Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, Eigen::MatrixXd &Qfunc) {
+Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::MatrixXd &Qfunc) {
     Eigen::Tensor<double, 3> symQ(n_qubits + 1, n_qubits + 1, n_qubits + 1);
     symQ.setZero();
 
