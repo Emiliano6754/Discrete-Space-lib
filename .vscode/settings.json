@@ -73,6 +73,7 @@
         "variant": "cpp",
         "dense": "cpp",
         "core": "cpp",
-        "kroneckerproduct": "cpp"
+        "kroneckerproduct": "cpp",
+        "*.inc": "cpp"
     }
 }
