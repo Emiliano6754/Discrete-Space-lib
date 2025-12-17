@@ -24,6 +24,25 @@ static unsigned int fact(const unsigned int &n) {
     return res;
 }
 
+// Returns Binom(N,k)
+static unsigned int binom(const unsigned int &N, const unsigned int &k) {
+    unsigned int res = 1;
+    for (unsigned int j = N; j > N - k; j--) {
+        res *= j;
+    }
+    res /= fact(k);
+    return res;
+}
+
+// Returns a tensor of doubles filled with all binomials (N,k) from k=0 to k=N
+Eigen::Tensor<double, 1> binom(const unsigned int &N) {
+    Eigen::Tensor<double, 1> res(N+1);
+    for (unsigned int k = 0; k < N+1; k++) {
+        res(k) = binom(N, k);
+    }
+    return res;
+}
+
 template <typename... Ints>
 static Eigen::array<unsigned int, sizeof...(Ints)> ind_arr(Ints... index) {
     return {static_cast<unsigned int>(index)...};
@@ -258,6 +277,24 @@ Eigen::Tensor<double, 3> get_Gfunc(const unsigned int &n_qubits, const unsigned 
     return Gfunc;
 }
 
+// Returns both the correlation matrix for a particular symmetric Q function and all first and second symmetric moments. Could potentally rework this overload into a single functin that does this with a pointer. Not necessary for now
+Eigen::Matrix3d get_correlation_matrix(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ, double &Sx, double &Sy, double &Sz, double &Sx2, double &Sy2, double &Sz2, double &SySz, double &SzSx, double &SxSy) {
+    cartesian_ang_operator_averages(n_qubits, qubitstate_size, symQ, Sx, Sy, Sz, Sx2, Sy2, Sz2, SySz, SzSx, SxSy);
+
+    Eigen::Matrix3d Gamma {
+        {Sx2 - Sx*Sx, SxSy - Sx*Sy, SzSx - Sz*Sx},
+        {SxSy - Sx*Sy, Sy2 - Sy*Sy, SySz - Sy*Sz},
+        {SzSx - Sz*Sx, SySz - Sy*Sz, Sz2 - Sz*Sz}
+    };
+
+    Eigen::Matrix3d Lambda {
+        {2.0 * n_qubits, sqrt3 * Sz, sqrt3 * Sy},
+        {sqrt3 * Sz, 2.0 * n_qubits, sqrt3 * Sx},
+        {sqrt3 * Sy, sqrt3 * Sx, 2.0 * n_qubits}
+    };
+    return (Gamma + Lambda) / (6.0 * n_qubits);
+}
+
 // Returns the Gaussian envelope of the state SymQ in Gfunc
 void get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ, Eigen::Tensor<double, 3> &Gfunc) {
     Gfunc.setZero();
@@ -298,4 +335,40 @@ void save_symQfunc(const Eigen::Tensor<double,3> &symQfunc, const std::string &f
     } else {
         std::cout << "Could not save symQfunc" << std::endl;
     }
+}
+
+// Returns the Kravchuck expansion and the Gaussian envelope of the state SymQ. Needs checking, the determinant of correlation_matrix may sometimes be negative, which leads to the sqrt to be undefined.
+void get_Kravchuk_expansion_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ, Eigen::Tensor<double, 3> &Gfunc, Eigen::Tensor<double, 3> &Kravchuk_exp) {
+    Gfunc.setZero();
+    double Sx, Sy, Sz, Sx2, Sy2, Sz2, SySz, SzSx, SxSy;
+    Eigen::Matrix3d correlation_matrix = get_correlation_matrix(n_qubits, qubitstate_size, symQ, Sx, Sy, Sz, Sx2, Sy2, Sz2, SySz, SzSx, SxSy);
+    Eigen::Matrix3d precision_matrix = correlation_matrix.inverse();
+    Eigen::Vector3d x_bar = {0.5 - Sx/(2 * sqrt3 * n_qubits), 0.5 - Sy/(2 * sqrt3 * n_qubits), 0.5 - Sz/(2 * sqrt3 * n_qubits)};
+    Eigen::Vector3d x;
+    double coeff = (1 << (n_qubits + 1)) / ( EIGEN_PI * n_qubits * std::sqrt( EIGEN_PI * n_qubits * correlation_matrix.determinant() ) );
+    sym_space_loop(n_qubits, [&](int &m, int &n, int &k) {
+        x = {static_cast<double>(m)/n_qubits, static_cast<double>(n)/n_qubits, static_cast<double>(k)/n_qubits};
+        Gfunc(m, n, k) = coeff * std::exp(- static_cast<double>(n_qubits) * (x - x_bar).transpose() * precision_matrix * (x - x_bar) );
+    });
+    Eigen::Tensor<double, 3> Nm, Nn, Nk, K1m, K1n, K1k;
+    const Eigen::Tensor<double, 1> binomial = binom(n_qubits);
+    Eigen::array<Eigen::Index, 3> new_shape = {n_qubits+1, 1, 1};
+    Eigen::array<Eigen::Index, 3> bcast = {1, n_qubits+1, n_qubits+1};
+    Nm = binomial.reshape(new_shape).broadcast(bcast);
+    new_shape = {1, n_qubits+1, 1};
+    bcast = {n_qubits+1, 1, n_qubits+1};
+    Nn = ( 1.0 / static_cast<double>(1 << n_qubits) ) * binomial.reshape(new_shape).broadcast(bcast); // N choose n and N choose k include the 2^{-N} in front of them to reduce possible overflow
+    new_shape = {1, 1, n_qubits+1};
+    bcast = {n_qubits+1, n_qubits+1, 1};
+    Nk = ( 1.0 / static_cast<double>(1 << n_qubits) ) * binomial.reshape(new_shape).broadcast(bcast);
+    Eigen::VectorXd seq = Eigen::VectorXd::EqualSpaced(n_qubits+1, 0, 1);
+    Eigen::TensorMap<Eigen::Tensor<double, 3>> m(seq.data(), n_qubits+1, 1, 1);
+    Eigen::TensorMap<Eigen::Tensor<double, 3>> n(seq.data(), 1, n_qubits+1, 1);
+    Eigen::TensorMap<Eigen::Tensor<double, 3>> k(seq.data(), 1, 1, n_qubits+1);
+    K1m = - (2.0/n_qubits) * m + static_cast<double>(1);
+    K1n = - (2.0/n_qubits) * n + static_cast<double>(1);
+    K1k = - (2.0/n_qubits) * k + static_cast<double>(1);
+    Kravchuk_exp = Nm * Nn * Nk * ( (Sx/sqrt3) * K1m + (Sz/sqrt3) * K1n * n) + (Sy/sqrt3) * K1k + (1.0 / (3 * n_qubits *(n_qubits - 1))) * ( (Sx2 - n_qubits)*(2*m*m - 2*n_qubits*m + static_cast<double>(n_qubits*(n_qubits-1)/2)) + (Sz2 - n_qubits)*(2*n*n - 2*n_qubits*n + static_cast<double>(n_qubits*(n_qubits-1)/2)) + (Sy2 - n_qubits)*(2*k*k - 2*n_qubits*k + static_cast<double>(n_qubits*(n_qubits-1)/2)) ) + (1.0/6)*( (SySz + 2*sqrt3*Sx)*K1n*K1k + (SxSy + 2*sqrt3*Sz)*K1m*K1k + (SzSx + 2*sqrt3*Sy)*K1m*K1n + static_cast<double>(1));
+    Kravchuk_exp *= sym_space_mask(n_qubits);
+    
 }

@@ -83,6 +83,9 @@ void cartesian_ang_operator_averages(const unsigned int &n_qubits, const unsigne
 // Returns the correlation matrix for a particular symmetric Q function. In order to calculate values of the Gaussian envelope, the average values of Sx, Sy, Sz are returned in their inputs as well
 Eigen::Matrix3d get_correlation_matrix(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ, double &Sx, double &Sy, double &Sz);
 
+// Returns both the correlation matrix for a particular symmetric Q function and all first and second symmetric moments. Could potentally rework this overload into a single functin that does this with a pointer. Not necessary for now
+Eigen::Matrix3d get_correlation_matrix(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ, double &Sx, double &Sy, double &Sz, double &Sx2, double &Sy2, double &Sz2, double &SySz, double &SzSx, double &SxSy);
+
 // Returns the Gaussian envelope of the state SymQ
 Eigen::Tensor<double, 3> get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ);
 
@@ -94,5 +97,7 @@ Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned i
 
 // Saves the symQfunc in filename using a csv format
 void save_symQfunc(const Eigen::Tensor<double,3> &symQfunc, const std::string &filename);
+
+void get_Kravchuk_expansion_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ, Eigen::Tensor<double, 3> &Gfunc, Eigen::Tensor<double, 3> &Kravchuk_exp);
 
 #endif
