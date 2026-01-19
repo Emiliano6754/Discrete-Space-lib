@@ -102,6 +102,7 @@ void change_basis(const unsigned int &element, const unsigned int* basis, unsign
     }
 }
 
+// Returns element expanded in another basis, given the expansion of the current basis in terms of the new basis. This expansion is assumed to be contained in basis, with N elements.
 unsigned int change_basis(const unsigned int &element, const unsigned int* basis, const unsigned int &N) {
     unsigned int transformed_element = 0;
     for (unsigned int j = 0; j < N; j++) {
@@ -149,6 +150,7 @@ void GF2N_invert_matrix(const unsigned int* matrix, unsigned int* inverse_matrix
     }
 }
 
+// Reads the self dual basis expanded in the polynomial basis from database
 void initialize_self_dual_basis(unsigned int* self_dual_basis, unsigned int* generator_basis, const unsigned int &N) {
     read_basis_from_generator("C:\\dev\\Campos\\Data\\self_adj_bases.txt", self_dual_basis, N);
     GF2N_invert_matrix(self_dual_basis, generator_basis, N);
