@@ -156,3 +156,42 @@ void initialize_self_dual_basis(unsigned int* self_dual_basis, unsigned int* gen
     GF2N_invert_matrix(self_dual_basis, generator_basis, N);
     std::reverse(generator_basis, generator_basis + N);
 }
+
+// Checks if a set of basis vector indices (j_1, j_2, ..., j_r) has all indices set to n_qubits
+bool check_j_vector_max(const unsigned int &n_qubits, const unsigned int &r, const unsigned int* const j_vector) {
+    bool maximum = true;
+    for (int l = 0; l < r; l++) {
+        if (j_vector[l] != n_qubits) {
+            maximum = false;
+            break;
+        }
+    }
+    return maximum;
+}
+
+// Loops over all sets of basis vector indices j_vector = (j_1, j_2, ..., j_r) from j_k = 1 to n_qubits for all k and evaluates operate_basis(j_vector) on each iteration
+template<typename LoopFunc>
+void nested_basis_loop(const unsigned int &n_qubits, const unsigned int &nested_loops, LoopFunc operate_basis) {
+    unsigned int* j_vector = static_cast<unsigned int*>(_malloca(nested_loops * sizeof(unsigned int)));
+    
+    // Initialize all js to 1
+    for (int l = 0; l < nested_loops; l++) {
+        j_vector[l] = 1;
+    }
+
+    int current_j = 1;
+    while (!check_j_vector_max(n_qubits, nested_loops, j_vector)) {
+        operate_basis(j_vector);
+        
+        while (current_j <= nested_loops) {
+            if (j_vector[current_j] < n_qubits) {
+                j_vector[current_j] += 1;
+                current_j = 1;
+                break;
+            } else {
+                j_vector[current_j] = 1;
+                current_j += 1;
+            }
+        }
+    }
+}

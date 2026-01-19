@@ -24,4 +24,11 @@ void GF2N_invert_matrix(const unsigned int* matrix, unsigned int* inverse_matrix
 // Reads the self dual basis expanded in the polynomial basis from database
 void initialize_self_dual_basis(unsigned int* self_dual_basis, unsigned int* generator_basis, const unsigned int &N);
 
+// Checks if a set of basis vector indices (j_1, j_2, ..., j_r) has all indices set to n_qubits
+bool check_j_vector_max(const unsigned int &n_qubits, const unsigned int &r, const unsigned int* const j_vector);
+
+// Loops over all sets of basis vector indices j_vector = (j_1, j_2, ..., j_r) from j_k = 1 to n_qubits for all k and evaluates operate_basis(j_vector) on each iteration
+template<typename LoopFunc>
+void nested_basis_loop(const unsigned int &n_qubits, const unsigned int &nested_loops, LoopFunc operate_basis);
+
 #endif
