@@ -3,7 +3,7 @@
 #include<fstream>
 #include<string>
 #include<sstream>
-#include<iostream>
+// #include<iostream>
 #include<bitset> // Easy binary printing for debugging
 #include<algorithm> // Reverse raw pointer array
 
@@ -167,31 +167,4 @@ bool check_j_vector_max(const unsigned int &n_qubits, const unsigned int &r, con
         }
     }
     return maximum;
-}
-
-// Loops over all sets of basis vector indices j_vector = (j_1, j_2, ..., j_r) from j_k = 1 to n_qubits for all k and evaluates operate_basis(j_vector) on each iteration
-template<typename LoopFunc>
-void nested_basis_loop(const unsigned int &n_qubits, const unsigned int &nested_loops, LoopFunc operate_basis) {
-    unsigned int* j_vector = static_cast<unsigned int*>(_malloca(nested_loops * sizeof(unsigned int)));
-    
-    // Initialize all js to 1
-    for (int l = 0; l < nested_loops; l++) {
-        j_vector[l] = 1;
-    }
-
-    int current_j = 1;
-    while (!check_j_vector_max(n_qubits, nested_loops, j_vector)) {
-        operate_basis(j_vector);
-        
-        while (current_j <= nested_loops) {
-            if (j_vector[current_j] < n_qubits) {
-                j_vector[current_j] += 1;
-                current_j = 1;
-                break;
-            } else {
-                j_vector[current_j] = 1;
-                current_j += 1;
-            }
-        }
-    }
 }

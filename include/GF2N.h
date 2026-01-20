@@ -2,6 +2,7 @@
 #define GF2NH
 #include<x86intrin.h>
 #include<string>
+#include<iostream>
 
 // Returns the number on the (N-2)th row of polynomial filename. Can be used to parse the full, reduced and reducing polynomials. Can read polynomials of up to 64 qubits
 __m128i read_polynomial(const std::string &polynomial_filename, const unsigned int &N);
@@ -29,6 +30,30 @@ bool check_j_vector_max(const unsigned int &n_qubits, const unsigned int &r, con
 
 // Loops over all sets of basis vector indices j_vector = (j_1, j_2, ..., j_r) from j_k = 1 to n_qubits for all k and evaluates operate_basis(j_vector) on each iteration
 template<typename LoopFunc>
-void nested_basis_loop(const unsigned int &n_qubits, const unsigned int &nested_loops, LoopFunc operate_basis);
+void nested_basis_loop(const unsigned int &n_qubits, const unsigned int &nested_loops, LoopFunc operate_basis) {
+    unsigned int* j_vector = static_cast<unsigned int*>(_malloca(nested_loops * sizeof(unsigned int)));
+    
+    // Initialize all js to 1
+    for (int l = 0; l < nested_loops; l++) {
+        j_vector[l] = 1;
+    }
+
+    int current_j = 0;
+    while (!check_j_vector_max(n_qubits, nested_loops, j_vector)) {
+        operate_basis(j_vector);
+        
+        while (current_j <= nested_loops) {
+            if (j_vector[current_j] < n_qubits) {
+                j_vector[current_j] += 1;
+                current_j = 0;
+                break;
+            } else {
+                j_vector[current_j] = 1;
+                current_j += 1;
+            }
+        }
+    }
+    operate_basis(j_vector); // Ensure the last j_vector is also operated on
+}
 
 #endif
