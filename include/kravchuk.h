@@ -10,6 +10,12 @@ public:
     polynomial(unsigned int const &rank, std::unique_ptr<int[]> const &in_coeffs);
     // Copy constructor
     polynomial(polynomial const &other);
+    //  Builds the next Kravchuk polynomial from Kravchuk recurrence relations
+    polynomial(polynomial const &first, polynomial const &second, unsigned int const &N): n_rank(second.rank() + 1), coeffs(std::make_unique<int[]>(n_rank + 1)) {
+        for (int j = 0; j <= n_rank; j++) {
+            coeffs[j] = (N * first[j] - 2 * first[j-1] - (N - n_rank + 2) * second[j]) / n_rank;
+        }
+    }
     // Returns n-th coefficient of this
     int operator[](unsigned int const &n) const;
     // The rank of this
