@@ -5,6 +5,7 @@
 #include<fstream>
 #include<iostream>
 #include<filesystem>
+#include<Qfunc.h>
 
 static constexpr double sqrt3 = 1.73205080756887;
 static constexpr std::complex<double> xi = std::complex<double>(0.5 * (sqrt3 - 1), 0.5 * (sqrt3 - 1));
@@ -325,6 +326,18 @@ Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned i
     return symQ;
 }
 
+// Returns the symmetrized Q function for a given state (specified by its operational basis expansion). Assumes the state has no complex phases
+Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::VectorXd &state) {
+    const Eigen::MatrixXd Qfunc = pure_Qfunc_from_operational(n_qubits, qubitstate_size, state);
+    return get_symQ(n_qubits, qubitstate_size, Qfunc);
+}
+
+// Returns the symmetrized Q function for a given state (specified by its operational basis expansion)
+Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::VectorXcd &state) {
+    const Eigen::MatrixXd Qfunc = pure_Qfunc_from_operational(n_qubits, qubitstate_size, state);
+    return get_symQ(n_qubits, qubitstate_size, Qfunc);
+}
+
 // Saves the symQfunc in filename using a csv format
 void save_symQfunc(const Eigen::Tensor<double,3> &symQfunc, const std::string &filename) {
     const std::filesystem::path cwd = std::filesystem::current_path();
@@ -350,25 +363,25 @@ void get_Kravchuk_expansion_Gfunc(const unsigned int &n_qubits, const unsigned i
         x = {static_cast<double>(m)/n_qubits, static_cast<double>(n)/n_qubits, static_cast<double>(k)/n_qubits};
         Gfunc(m, n, k) = coeff * std::exp(- static_cast<double>(n_qubits) * (x - x_bar).transpose() * precision_matrix * (x - x_bar) );
     });
-    Eigen::Tensor<double, 3> Nm, Nn, Nk, K1m, K1n, K1k;
+    Eigen::Tensor<double, 3> Nm, Nn, Nk, K1m, K1n, K1k, m, n, k;
     const Eigen::Tensor<double, 1> binomial = binom(n_qubits);
+    Eigen::VectorXd seq = Eigen::VectorXd::EqualSpaced(n_qubits+1, 0, 1);
+    Eigen::TensorMap<Eigen::Tensor<double, 1>> seq_tensor(seq.data(), n_qubits+1);
     Eigen::array<Eigen::Index, 3> new_shape = {n_qubits+1, 1, 1};
     Eigen::array<Eigen::Index, 3> bcast = {1, n_qubits+1, n_qubits+1};
     Nm = binomial.reshape(new_shape).broadcast(bcast);
+    m = seq_tensor.reshape(new_shape).broadcast(bcast);
     new_shape = {1, n_qubits+1, 1};
     bcast = {n_qubits+1, 1, n_qubits+1};
     Nn = ( 1.0 / static_cast<double>(1 << n_qubits) ) * binomial.reshape(new_shape).broadcast(bcast); // N choose n and N choose k include the 2^{-N} in front of them to reduce possible overflow
+    n = seq_tensor.reshape(new_shape).broadcast(bcast);
     new_shape = {1, 1, n_qubits+1};
     bcast = {n_qubits+1, n_qubits+1, 1};
     Nk = ( 1.0 / static_cast<double>(1 << n_qubits) ) * binomial.reshape(new_shape).broadcast(bcast);
-    Eigen::VectorXd seq = Eigen::VectorXd::EqualSpaced(n_qubits+1, 0, 1);
-    Eigen::TensorMap<Eigen::Tensor<double, 3>> m(seq.data(), n_qubits+1, 1, 1);
-    Eigen::TensorMap<Eigen::Tensor<double, 3>> n(seq.data(), 1, n_qubits+1, 1);
-    Eigen::TensorMap<Eigen::Tensor<double, 3>> k(seq.data(), 1, 1, n_qubits+1);
+    k = seq_tensor.reshape(new_shape).broadcast(bcast);
     K1m = - (2.0/n_qubits) * m + static_cast<double>(1);
     K1n = - (2.0/n_qubits) * n + static_cast<double>(1);
     K1k = - (2.0/n_qubits) * k + static_cast<double>(1);
     Kravchuk_exp = Nm * Nn * Nk * ( (Sx/sqrt3) * K1m + (Sz/sqrt3) * K1n * n) + (Sy/sqrt3) * K1k + (1.0 / (3 * n_qubits *(n_qubits - 1))) * ( (Sx2 - n_qubits)*(2*m*m - 2*n_qubits*m + static_cast<double>(n_qubits*(n_qubits-1)/2)) + (Sz2 - n_qubits)*(2*n*n - 2*n_qubits*n + static_cast<double>(n_qubits*(n_qubits-1)/2)) + (Sy2 - n_qubits)*(2*k*k - 2*n_qubits*k + static_cast<double>(n_qubits*(n_qubits-1)/2)) ) + (1.0/6)*( (SySz + 2*sqrt3*Sx)*K1n*K1k + (SxSy + 2*sqrt3*Sz)*K1m*K1k + (SzSx + 2*sqrt3*Sy)*K1m*K1n + static_cast<double>(1));
     Kravchuk_exp *= sym_space_mask(n_qubits);
-    
 }

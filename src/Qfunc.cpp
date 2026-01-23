@@ -28,7 +28,7 @@ Eigen::MatrixXd pure_Qfunc_from_operational(const unsigned int &n_qubits, const 
             for (unsigned int beta = 0; beta < qubitstate_size; beta++) {
                 sum = 0;
                 for (unsigned int eta = 0; eta < qubitstate_size; eta++) {
-                    sum += (1.0 - 2 * std::popcount(alpha & eta)) * xi_conj_buffer[std::popcount(beta ^ eta)] * state[eta];
+                    sum += (1.0 - 2.0 * std::popcount(alpha & eta)) * xi_conj_buffer[std::popcount(beta ^ eta)] * state[eta];
                 }
                 Qfunc(alpha, beta) = norm * std::norm(sum);
             }
@@ -54,7 +54,7 @@ Eigen::MatrixXd pure_Qfunc_from_operational(const unsigned int &n_qubits, const 
             for (unsigned int beta = 0; beta < qubitstate_size; beta++) {
                 sum = 0;
                 for (unsigned int eta = 0; eta < qubitstate_size; eta++) {
-                    sum += (1.0 - 2 * std::popcount(alpha & eta)) * xi_conj_buffer[std::popcount(beta ^ eta)] * state[eta];
+                    sum += (1.0 - 2.0 * std::popcount(alpha & eta)) * xi_conj_buffer[std::popcount(beta ^ eta)] * state[eta];
                 }
                 Qfunc(alpha, beta) = norm * std::norm(sum);
             }

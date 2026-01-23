@@ -85,8 +85,8 @@ Eigen::VectorXcd su2_coherent_state(const unsigned int &n_qubits, const unsigned
     return state;
 }
 
-// Returns the normalized domain wall state with n_qubits
-Eigen::VectorXd domain_wall_state(const unsigned int &n_qubits, const unsigned int &qubitstate_size) {
+// Returns the normalized W state with n_qubits
+Eigen::VectorXd W_state(const unsigned int &n_qubits, const unsigned int &qubitstate_size) {
     Eigen::VectorXd state = Eigen::VectorXd::Zero(qubitstate_size);
     const double norm = 1.0 / std::sqrt(n_qubits);
     for (int j = 0; j < n_qubits; j++) {

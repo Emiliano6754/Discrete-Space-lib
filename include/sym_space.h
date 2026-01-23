@@ -95,6 +95,12 @@ void get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size
 // Returns the symmetrized Q function for a given state (specified by its Q function)
 Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::MatrixXd &Qfunc);
 
+// Returns the symmetrized Q function for a given state (specified by its operational basis expansion). Assumes the state has no complex phases
+Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::VectorXd &state);
+
+// Returns the symmetrized Q function for a given state (specified by its operational basis expansion)
+Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::VectorXcd &state);
+
 // Saves the symQfunc in filename using a csv format
 void save_symQfunc(const Eigen::Tensor<double,3> &symQfunc, const std::string &filename);
 
