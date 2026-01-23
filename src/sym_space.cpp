@@ -36,7 +36,7 @@ static unsigned int binom(const unsigned int &N, const unsigned int &k) {
 }
 
 // Returns a tensor of doubles filled with all binomials (N,k) from k=0 to k=N
-Eigen::Tensor<double, 1> binom(const unsigned int &N) {
+static Eigen::Tensor<double, 1> binom(const unsigned int &N) {
     Eigen::Tensor<double, 1> res(N+1);
     for (unsigned int k = 0; k < N+1; k++) {
         res(k) = binom(N, k);
