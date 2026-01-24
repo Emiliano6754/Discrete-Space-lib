@@ -68,7 +68,7 @@ inline double Rmnk(const unsigned int &n_qubits, const unsigned int &m, const un
 Eigen::Tensor<double, 3> get_Rmnk(const unsigned int &n_qubits) {
     Eigen::Tensor<double, 3> R(n_qubits + 1, n_qubits + 1, n_qubits + 1);
     R.setZero();
-    sym_space_loop(n_qubits, [&](int &m, int &n, int &k) {
+    sym_space_loop(n_qubits, [&](int const &m, int const &n, int const &k) {
         R(m, n, k) = Rmnk(n_qubits, m, n, k);
     });
     return R;
