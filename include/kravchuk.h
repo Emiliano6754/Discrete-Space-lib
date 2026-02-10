@@ -28,6 +28,8 @@ private:
 // Polynomial over 3 variables
 class polynomial3{
 public:
+    // Build a polynomial of fixed rank, with all coefficients set to zero
+    polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3);
     // Builds a polynomial from its coefficients
     polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3, std::unique_ptr<double[]> const &in_coeffs);
     // Copy constructor
@@ -36,6 +38,12 @@ public:
     polynomial3(polynomial const &p1, polynomial const &p2, polynomial const &p3);
     // Returns this evaluated at (m,n,k)
     double const eval(int const &m, int const &n, int const &k) const;
+    // Calculates this polynomial multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k)
+    double binom_eval(unsigned int const &N, int const &m, int const &n, int const &k) const;
+    // Multiplies all coefficients of this by scalar.
+    polynomial3& mult(double const &scalar) &;
+    // Multiplies all coefficients of this by scalar.
+    polynomial3&& mult(double const &scalar) &&;
     // Returns a reference to the (m,n,k)-th power coefficient of this
     double& operator()(int const &m, int const &n, int const &k);
     // Returns a const reference to the (m,n,k)-th power coefficient of this

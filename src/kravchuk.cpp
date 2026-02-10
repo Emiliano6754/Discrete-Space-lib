@@ -1,6 +1,24 @@
 #include "kravchuk.h"
 #include<iostream>
 
+// Returns a double approximation of Binom(N,k)
+static double binom(const unsigned int &N, const unsigned int &k) {
+    double res = 1;
+    for (int j = 1; j <= k; j++) {
+        res *= static_cast<double>(N + 1 - j) / j;
+    }
+    return res;
+}
+
+// Returns a tensor of doubles filled with all approximations of binomials (N,k) from k=0 to k=N
+static std::vector<double> binom(const unsigned int &N) {
+    std::vector<double> res(N+1);
+    for (unsigned int k = 0; k < N+1; k++) {
+        res[k] = binom(N, k);
+    }
+    return res;
+}
+
 // Builds a polynomial based on its coefficients
 polynomial::polynomial(unsigned int const &rank, std::unique_ptr<double[]> const &in_coeffs): n_rank(rank), coeffs(std::make_unique<double[]>(rank+1)) {
     for (int j = 0; j <= rank; j++) {
@@ -50,6 +68,17 @@ void polynomial::print() const {
     std::cout << "\n";
 }
 
+// Build a polynomial of fixed rank, with all coefficients set to zero
+polynomial3::polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3) : n_rank1(rank1), n_rank2(rank2), n_rank3(rank3), coeffs(std::make_unique<double[]>((rank1+1)*(rank2+1)*(rank3+1))) {
+    for (int j = 0; j <= rank3; j++) {
+        for (int k = 0; k <= rank2; k++) {
+            for (int l = 0; l <= rank1; l++) {
+                (*this)(j, k, l) = 0;
+            }
+        }
+    }
+}
+
 // Builds a polynomial from its coefficients
 polynomial3::polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3, std::unique_ptr<double[]> const &in_coeffs) : n_rank1(rank1), n_rank2(rank2), n_rank3(rank3), coeffs(std::make_unique<double[]>((rank1+1)*(rank2+1)*(rank3+1))) {
     for (int j = 0; j <= rank3; j++) {
@@ -82,7 +111,9 @@ double const polynomial3::eval(int const &m, int const &n, int const &k) const {
     double res = 0;
     double current_x = 1, current_y = 1, current_z = 1;
     for (int j = 0; j <= n_rank3; j++) {
+        current_y = 1;
         for (int k = 0; k <= n_rank2; k++) {
+            current_x = 1;
             for (int l = 0; l <= n_rank1; l++) {
                 res += (*this)(j, k, l) * current_x * current_y * current_z;
                 current_x *= m;
@@ -93,6 +124,37 @@ double const polynomial3::eval(int const &m, int const &n, int const &k) const {
     }
     return res;
 }
+
+// Calculates this polynomial multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k). This uses double definitions of Binom(N, m), so that it is not exact
+double polynomial3::binom_eval(unsigned int const &N, int const &m, int const &n, int const &k) const {
+    static std::vector<double> binoms = binom(N);
+    return binoms[m] * binoms[n] * binoms[k] * eval(m, n, k);
+}
+
+// Multiplies all coefficients of this by scalar
+polynomial3& polynomial3::mult(double const &scalar) & {
+    for (int j = 0; j <= n_rank3; j++) {
+        for (int k = 0; k <= n_rank2; k++) {
+            for (int l = 0; l <= n_rank1; l++) {
+                (*this)(j,k,l) *= scalar;
+            }
+        }
+    }
+    return *this;
+}
+
+// Multiplies all coefficients of this by scalar
+polynomial3&& polynomial3::mult(double const &scalar) && {
+    for (int j = 0; j <= n_rank3; j++) {
+        for (int k = 0; k <= n_rank2; k++) {
+            for (int l = 0; l <= n_rank1; l++) {
+                (*this)(j,k,l) *= scalar;
+            }
+        }
+    }
+    return std::move(*this);
+}
+
 
 // Returns a reference to the (m,n,k)-th power coefficient of this
 double& polynomial3::operator()(int const &m, int const &n, int const &k) {
@@ -140,6 +202,7 @@ void polynomial3::operator+=(polynomial3 const &other) {
         n_rank3 = max_rank3;
     }
 }
+
 // Returns a new polynomial, with coefficients equal to the sum of coefficients of both this and other
 polynomial3 polynomial3::operator+(polynomial3 const &other) {
     const int max_rank1 = std::max(n_rank1, other.n_rank1);
