@@ -3,6 +3,7 @@
 
 #include<vector>
 #include<memory>
+#include<unsupported/Eigen/CXX11/Tensor>
 
 class polynomial{
 public:
@@ -40,10 +41,18 @@ public:
     double const eval(int const &m, int const &n, int const &k) const;
     // Calculates this polynomial multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k)
     double binom_eval(unsigned int const &N, int const &m, int const &n, int const &k) const;
-    // Multiplies all coefficients of this by scalar.
+    // Multiplies all coefficients of this by scalar
     polynomial3& mult(double const &scalar) &;
-    // Multiplies all coefficients of this by scalar.
+    // Multiplies all coefficients of this by scalar
     polynomial3&& mult(double const &scalar) &&;
+    // Sets all coefficients of this to zero
+    polynomial3& set_zero() &;
+    // Sets all coefficients of this to zero
+    polynomial3&& set_zero() &&;
+    // Returns this polynomial as a tensor, evaluated over all symmetric space
+    Eigen::Tensor<double, 3> as_tensor(unsigned int &n_qubits) const;
+    // Returns this polynomial as a tensor, evaluated over all symmetric space with leading binomials Binom(N, m) * Binom(N, n) * Binom(N, k)
+    Eigen::Tensor<double, 3> as_binom_tensor(unsigned int &n_qubits) const;
     // Returns a reference to the (m,n,k)-th power coefficient of this
     double& operator()(int const &m, int const &n, int const &k);
     // Returns a const reference to the (m,n,k)-th power coefficient of this

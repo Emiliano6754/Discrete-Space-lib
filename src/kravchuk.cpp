@@ -1,5 +1,6 @@
 #include "kravchuk.h"
 #include<iostream>
+#include<sym_space.h>
 
 // Returns a double approximation of Binom(N,k)
 static double binom(const unsigned int &N, const unsigned int &k) {
@@ -155,6 +156,46 @@ polynomial3&& polynomial3::mult(double const &scalar) && {
     return std::move(*this);
 }
 
+// Sets all coefficients of this to zero
+polynomial3& polynomial3::set_zero() & {
+    for (int j = 0; j <= n_rank3; j++) {
+        for (int k = 0; k <= n_rank2; k++) {
+            for (int l = 0; l <= n_rank1; l++) {
+                (*this)(j,k,l) = 0;
+            }
+        }
+    }
+    return *this;
+}
+
+// Sets all coefficients of this to zero
+polynomial3&& polynomial3::set_zero() && {
+    for (int j = 0; j <= n_rank3; j++) {
+        for (int k = 0; k <= n_rank2; k++) {
+            for (int l = 0; l <= n_rank1; l++) {
+                (*this)(j,k,l) = 0;
+            }
+        }
+    }
+    return std::move(*this);
+}
+
+// Returns this polynomial as a tensor, evaluated over all symmetric space
+Eigen::Tensor<double, 3> polynomial3::as_tensor(unsigned int &n_qubits) const {
+    Eigen::Tensor<double, 3> tensor;
+    tensor.setZero();
+    sym_space_loop(n_qubits, [&] (int const &m, int const &n, int const &k) {
+        tensor = eval(m, n, k);
+    });
+}
+
+Eigen::Tensor<double, 3> polynomial3::as_binom_tensor(unsigned int &n_qubits) const {
+    Eigen::Tensor<double, 3> tensor;
+    tensor.setZero();
+    sym_space_loop(n_qubits, [&] (int const &m, int const &n, int const &k) {
+        tensor = binom_eval(n_qubits, m, n, k);
+    });
+}
 
 // Returns a reference to the (m,n,k)-th power coefficient of this
 double& polynomial3::operator()(int const &m, int const &n, int const &k) {
