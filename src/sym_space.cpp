@@ -6,6 +6,7 @@
 #include<iostream>
 #include<filesystem>
 #include<Qfunc.h>
+#include<kravchuk.h>
 
 static constexpr double sqrt3 = 1.73205080756887;
 static constexpr std::complex<double> xi = std::complex<double>(0.5 * (sqrt3 - 1), 0.5 * (sqrt3 - 1));
@@ -25,13 +26,31 @@ static unsigned int fact(const unsigned int &n) {
     return res;
 }
 
-// Returns Binom(N,k)
+// Returns Binom(N,k) exactly
 static unsigned int binom(const unsigned int &N, const unsigned int &k) {
     unsigned int res = 1;
     for (unsigned int j = N; j > N - k; j--) {
         res *= j;
     }
     res /= fact(k);
+    return res;
+}
+
+// Returns a double approximation of Binom(N,k)
+static double double_binom(const unsigned int &N, const unsigned int &k) {
+    double res = 1;
+    for (int j = 1; j <= k; j++) {
+        res *= static_cast<double>(N + 1 - j) / j;
+    }
+    return res;
+}
+
+// Returns a tensor of all double approximations of Binom(N,k) from k=0 to k=N
+static std::vector<double> double_binoms(const unsigned int &N) {
+    std::vector<double> res(N+1);
+    for (unsigned int k = 0; k < N+1; k++) {
+        res[k] = double_binom(N, k);
+    }
     return res;
 }
 
@@ -72,6 +91,69 @@ Eigen::Tensor<double, 3> get_Rmnk(const unsigned int &n_qubits) {
         R(m, n, k) = Rmnk(n_qubits, m, n, k);
     });
     return R;
+}
+
+// Returns the number of combinations of 3 field variables, with fixed weights h. This is exact, but overflows quickly
+unsigned int C3(const unsigned int &n_qubits, const int &h1, const int &h2, const int &h3, const int &h4, const int &h5, const int &h6, const int &h7) {
+    const int w1 = (-h1 - h2 - h3 + h4 + h5 + h6 + h7) / 4;
+    const int w2 = (h1 - h2 + h3 + h4 - h5 + h6 - h7) / 4;
+    const int w3 = (-h1 + h2 + h3 + h4 + h5 - h6 - h7) / 4;
+    const int w4 = (h1 + h2 - h3 + h4 - h5 - h6 + h7) / 4;
+    const int N1 = n_qubits - (h1 + h2 + h3) / 2;
+    const int N2 = (h1 - h2 + h3) / 2;
+    const int N3 = (-h1 + h2 + h3) / 2;
+    const int N4 = (h1 + h2 - h3) / 2;
+    if (w1 < 0 || w2 < 0 || w3 < 0 || w4 < 0 || N1 - w1 < 0 || N2 - w2 < 0 || N3 - w3 < 0 || N4 - w4 < 0) {
+        return 0;
+    }
+    return fact(n_qubits) / (fact(w1) * fact(w2) * fact(w3) * fact(w4) * fact(N1 - w1) * fact(N2 - w2) * fact(N3 - w3) * fact(N4 - w4));
+}
+
+// Returns sum_h7 R_{h1h2h3}^{-1} C3(h)
+double reduced_C3(const unsigned int &n_qubits, const int &h1, const int &h2, const int &h3, const int &h4, const int &h5, const int &h6) {
+    double res = 0;
+    int w1, w2, w3, w4, N1, N2, N3, N4;
+    N1 = n_qubits - (h1 + h2 + h3) / 2;
+    N2 = (h1 - h2 + h3) / 2;
+    N3 = (-h1 + h2 + h3) / 2;
+    N4 = (h1 + h2 - h3) / 2;
+    for (int h7 = 0; h7 <= n_qubits; h7++) {
+        w1 = (-h1 - h2 - h3 + h4 + h5 + h6 + h7) / 4;
+        w2 = (h1 - h2 + h3 + h4 - h5 + h6 - h7) / 4;
+        w3 = (-h1 + h2 + h3 + h4 + h5 - h6 - h7) / 4;
+        w4 = (h1 + h2 - h3 + h4 - h5 - h6 + h7) / 4;
+        if (w1 < 0 || w2 < 0 || w3 < 0 || w4 < 0 || N1 - w1 < 0 || N2 - w2 < 0 || N3 - w3 < 0 || N4 - w4 < 0) {
+            continue;
+        }
+        res += double_binom(N1, w1) * double_binom(N2, w2) * double_binom(N3, w3) * double_binom(N4, w4);
+    }
+    return res;
+}
+
+// Returns renormalized g_mnk(p,q,r) as a polynomial on m, n, k, with p, q, r as parameters. To get g_mnk, evaluate gmnk with binom_eval or output as tensor with as_binom_tensor
+polynomial3 get_pol_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r) {
+    polynomial3 gmnk(n_qubits, n_qubits, n_qubits);
+    std::vector<polynomial> Kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
+    std::vector<double> Nchoose = double_binoms(n_qubits);
+    double norm = 1.0 / (1 << n_qubits);
+    for (int j1 = 0; j1 <= n_qubits; j1++) {
+        for (int j2 = 0; j2 <= n_qubits; j2++) {
+            for (int j3 = 0; j3 <= n_qubits; j3++) {
+                gmnk += polynomial3(Kravchuks[j1], Kravchuks[j2], Kravchuks[j3]).mult(norm * reduced_C3(n_qubits, p, q, r, j1, j2, j3) / (Nchoose[j1] * Nchoose[j2] * Nchoose[j3]));
+            }
+        }
+    }
+    return gmnk;
+}
+
+// Returns g_mnk(p,q,r) evaluated over all symmetric space, with p, q, r as parameters
+Eigen::Tensor<double, 3> get_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r) {
+    Eigen::Tensor<double, 3> gmnk(n_qubits + 1, n_qubits + 1, n_qubits + 1);
+    polynomial3 pol_gmnk = get_pol_gmnk(n_qubits, p, q, r);
+    sym_space_loop(n_qubits, [&](int const &m, int const &n, int const &k) {
+        gmnk(m, n, k) = pol_gmnk.binom_eval(n_qubits, m, n, k);
+    });
+    return gmnk;
 }
 
 // Returns a tensor with the P function of S•v, assuming v is normalized

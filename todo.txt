@@ -1,0 +1,1 @@
+- Write library of all common mathematical functions that are used in code, but defined on each file independently, such as factorial, binomial and vector of binomials.

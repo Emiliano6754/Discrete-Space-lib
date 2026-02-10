@@ -24,6 +24,18 @@ Eigen::Tensor<double, 3> sym_space_mask(const unsigned int &n_qubits);
 // Returns a tensor filled with the values R_{m,n,k}
 Eigen::Tensor<double, 3> get_Rmnk(const unsigned int &n_qubits);
 
+// Returns the number of combinations of 3 field variables, with fixed weights h. This is exact, but overflows quickly
+unsigned int C3(const unsigned int &n_qubits, const int &h1, const int &h2, const int &h3, const int &h4, const int &h5, const int &h6, const int &h7);
+
+// Returns sum_h7 R_{h1h2h3}^{-1} C3(h)
+double reduced_C3(const unsigned int &n_qubits, const int &h1, const int &h2, const int &h3, const int &h4, const int &h5, const int &h6);
+
+// Returns renormalized g_mnk(p,q,r) as a polynomial on m, n, k, with p, q, r as parameters. To get g_mnk, evaluate gmnk with binom_eval or output as tensor with as_binom_tensor
+polynomial3 get_pol_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r);
+
+// Returns g_mnk(p,q,r) evaluated over all symmetric space, with p, q, r as parameters
+Eigen::Tensor<double, 3> get_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r);
+
 // Returns the P function of S•v evaluated in (m, n, k), assuming v is normalized
 inline double Sv_Pfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Vector3d &v, const unsigned int &m, const unsigned int &n, const unsigned int &k) {
     return std::sqrt(3.0) * (n_qubits - 2.0 * (m * v(0) + n * v(1) + k * v(2) ) ) / qubitstate_size;
