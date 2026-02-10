@@ -6,7 +6,6 @@
 #include<iostream>
 #include<filesystem>
 #include<Qfunc.h>
-#include<kravchuk.h>
 
 static constexpr double sqrt3 = 1.73205080756887;
 static constexpr std::complex<double> xi = std::complex<double>(0.5 * (sqrt3 - 1), 0.5 * (sqrt3 - 1));

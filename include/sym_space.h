@@ -3,6 +3,7 @@
 
 #include<Eigen/Dense>
 #include<unsupported/Eigen/CXX11/Tensor>
+#include<kravchuk.h>
 
 // Executes func(int m, int n, int k) over the whole valid triples (m, n, k) of the symmetric space
 template <typename Func>
