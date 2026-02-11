@@ -31,11 +31,14 @@ unsigned int C3(const unsigned int &n_qubits, const int &h1, const int &h2, cons
 // Returns sum_h7 R_{h1h2h3}^{-1} C3(h)
 double reduced_C3(const unsigned int &n_qubits, const int &h1, const int &h2, const int &h3, const int &h4, const int &h5, const int &h6);
 
-// Returns renormalized g_mnk(p,q,r) as a polynomial on m, n, k, with p, q, r as parameters. To get g_mnk, evaluate gmnk with binom_eval or output as tensor with as_binom_tensor
+// Returns renormalized g_mnk(p,q,r) as a polynomial on m, n, k, with p, q, r as parameters. To get g_mnk, evaluate gmnk with binom_eval or output as tensor with as_binom_tensor. If p, q, r are not valid weights, returns a zero polynomial
 polynomial3 get_pol_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r);
 
-// Returns g_mnk(p,q,r) evaluated over all symmetric space, with p, q, r as parameters
+// Returns g_mnk(p,q,r) evaluated over all symmetric space, with p, q, r as parameters. If p, q, r are not valid weights, returns a zero tensor
 Eigen::Tensor<double, 3> get_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r);
+
+// Returns g_mnk(p,q,r) for (p,q,r) in all symmetric space, stored in the order p, q, r. For values outside of the symmetric space, returns zero polynomials
+std::vector<polynomial3> get_all_gmnk(unsigned int const &n_qubits);
 
 // Returns the P function of S•v evaluated in (m, n, k), assuming v is normalized
 inline double Sv_Pfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Vector3d &v, const unsigned int &m, const unsigned int &n, const unsigned int &k) {

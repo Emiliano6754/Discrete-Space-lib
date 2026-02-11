@@ -5,6 +5,7 @@
 #include<fstream>
 #include<iostream>
 #include<filesystem>
+#include<vector>
 #include<Qfunc.h>
 
 static constexpr double sqrt3 = 1.73205080756887;
@@ -129,9 +130,13 @@ double reduced_C3(const unsigned int &n_qubits, const int &h1, const int &h2, co
     return res;
 }
 
-// Returns renormalized g_mnk(p,q,r) as a polynomial on m, n, k, with p, q, r as parameters. To get g_mnk, evaluate gmnk with binom_eval or output as tensor with as_binom_tensor
+// Returns renormalized g_mnk(p,q,r) as a polynomial on m, n, k, with p, q, r as parameters. To get g_mnk, evaluate gmnk with binom_eval or output as tensor with as_binom_tensor. If p, q, r are not valid weights, returns a zero polynomial
 polynomial3 get_pol_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r) {
     polynomial3 gmnk(n_qubits, n_qubits, n_qubits);
+    // Check if the parameters are valid weights
+    if (r < std::abs(static_cast<int>(p) - static_cast<int>(q)) || r > std::min(static_cast<int>(p + q), 2*static_cast<int>(n_qubits) - static_cast<int>(p + q))) {
+        return std::move(gmnk);
+    }
     std::vector<polynomial> Kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
     std::vector<double> Nchoose = double_binoms(n_qubits);
     double norm = 1.0 / (1 << n_qubits);
@@ -142,16 +147,34 @@ polynomial3 get_pol_gmnk(unsigned int const &n_qubits, unsigned int const &p, un
             }
         }
     }
-    return gmnk;
+    return std::move(gmnk);
 }
 
-// Returns g_mnk(p,q,r) evaluated over all symmetric space, with p, q, r as parameters
+// Returns g_mnk(p,q,r) evaluated over all symmetric space, with p, q, r as parameters. If p, q, r are not valid weights, returns a zero tensor
 Eigen::Tensor<double, 3> get_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r) {
     Eigen::Tensor<double, 3> gmnk(n_qubits + 1, n_qubits + 1, n_qubits + 1);
+    // Check if the parameters are valid weights
+    if (r < std::abs(static_cast<int>(p) - static_cast<int>(q)) || r > std::min(static_cast<int>(p + q), 2*static_cast<int>(n_qubits) - static_cast<int>(p + q))) {
+        return gmnk.setZero();
+    }
     polynomial3 pol_gmnk = get_pol_gmnk(n_qubits, p, q, r);
     sym_space_loop(n_qubits, [&](int const &m, int const &n, int const &k) {
         gmnk(m, n, k) = pol_gmnk.binom_eval(n_qubits, m, n, k);
     });
+    return gmnk;
+}
+
+// Returns g_mnk(p,q,r) for (p,q,r) in all symmetric space, stored in the order p, q, r
+std::vector<polynomial3> get_all_gmnk(unsigned int const &n_qubits) {
+    std::vector<polynomial3> gmnk;
+    gmnk.reserve((n_qubits + 1) * (n_qubits + 1) * (n_qubits + 1));
+    for (int r = 0; r <= n_qubits; r++) {
+        for (int q = 0; q <= n_qubits; q++) {
+            for (int p = 0; p <= n_qubits; p++) {
+                gmnk.emplace_back(get_pol_gmnk(n_qubits, p, q, r));
+            }
+        }
+    }
     return gmnk;
 }
 
