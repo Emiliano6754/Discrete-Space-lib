@@ -1,1 +1,4 @@
 - Write library of all common mathematical functions that are used in code, but defined on each file independently, such as factorial, binomial and vector of binomials.
+- Correct Rmnk to use a double approximation of factorial
+- Implement GF2N matrix class and change all instances of Adj to use a specialized GF2N matrix class
+- Implement class of polynomials/tensors stored with 3 indices in sym_space to implement operators with weight dependant definitions. Change get_all_gmnk to use this

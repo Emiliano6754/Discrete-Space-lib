@@ -35,6 +35,8 @@ public:
     polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3, std::unique_ptr<double[]> const &in_coeffs);
     // Copy constructor
     polynomial3(polynomial3 const &other);
+    // Move constructor
+    polynomial3(polynomial3 &&other);
     // Constructs a polynomial over three variables from three polynomials, each over one variable
     polynomial3(polynomial const &p1, polynomial const &p2, polynomial const &p3);
     // Returns this evaluated at (m,n,k)
@@ -50,9 +52,11 @@ public:
     // Sets all coefficients of this to zero
     polynomial3&& set_zero() &&;
     // Returns this polynomial as a tensor, evaluated over all symmetric space
-    Eigen::Tensor<double, 3> as_tensor(unsigned int &n_qubits) const;
+    Eigen::Tensor<double, 3> as_tensor(unsigned int const &n_qubits) const;
     // Returns this polynomial as a tensor, evaluated over all symmetric space with leading binomials Binom(N, m) * Binom(N, n) * Binom(N, k)
-    Eigen::Tensor<double, 3> as_binom_tensor(unsigned int &n_qubits) const;
+    Eigen::Tensor<double, 3> as_binom_tensor(unsigned int const &n_qubits) const;
+    // Assignment operator, moves other.coeffs to this
+    polynomial3& operator=(polynomial3 &&other);
     // Returns a reference to the (m,n,k)-th power coefficient of this
     double& operator()(int const &m, int const &n, int const &k);
     // Returns a const reference to the (m,n,k)-th power coefficient of this

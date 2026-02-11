@@ -96,6 +96,11 @@ polynomial3::polynomial3(polynomial3 const &other): n_rank1(other.n_rank1), n_ra
     std::copy(other.coeffs.get(), other.coeffs.get() + (other.n_rank1 + 1) * (other.n_rank2 + 1) * (other.n_rank3 + 1), coeffs.get());
 }
 
+// Move constructor
+polynomial3::polynomial3(polynomial3 &&other) : n_rank1(other.n_rank1), n_rank2(other.n_rank2), n_rank3(other.n_rank3) {
+    coeffs = std::move(other.coeffs);
+}
+
 // Constructs a polynomial over three variables from three polynomials, each over one variable
 polynomial3::polynomial3(polynomial const &p1, polynomial const &p2, polynomial const &p3) : n_rank1(p1.rank()), n_rank2(p2.rank()), n_rank3(p3.rank()), coeffs(std::make_unique<double[]>((p1.rank()+1)*(p2.rank()+1)*(p3.rank()+1))) {
     for (int j = 0; j <= n_rank3; j++) {
@@ -181,20 +186,32 @@ polynomial3&& polynomial3::set_zero() && {
 }
 
 // Returns this polynomial as a tensor, evaluated over all symmetric space
-Eigen::Tensor<double, 3> polynomial3::as_tensor(unsigned int &n_qubits) const {
+Eigen::Tensor<double, 3> polynomial3::as_tensor(unsigned int const &n_qubits) const {
     Eigen::Tensor<double, 3> tensor;
     tensor.setZero();
     sym_space_loop(n_qubits, [&] (int const &m, int const &n, int const &k) {
-        tensor = eval(m, n, k);
+        tensor(m, n, k) = eval(m, n, k);
     });
+    return tensor;
 }
 
-Eigen::Tensor<double, 3> polynomial3::as_binom_tensor(unsigned int &n_qubits) const {
+// Returns this polynomial as a tensor, evaluated over all symmetric space with leading binomials Binom(N, m) * Binom(N, n) * Binom(N, k)
+Eigen::Tensor<double, 3> polynomial3::as_binom_tensor(unsigned int const &n_qubits) const {
     Eigen::Tensor<double, 3> tensor;
     tensor.setZero();
     sym_space_loop(n_qubits, [&] (int const &m, int const &n, int const &k) {
-        tensor = binom_eval(n_qubits, m, n, k);
+        tensor(m, n, k) = binom_eval(n_qubits, m, n, k);
     });
+    return tensor;
+}
+
+// Assignment operator, moves other.coeffs to this
+polynomial3& polynomial3::operator=(polynomial3 &&other) {
+    n_rank1 = other.n_rank1;
+    n_rank2 = other.n_rank2;
+    n_rank3 = other.n_rank3;
+    coeffs = std::move(other.coeffs);
+    return *this;
 }
 
 // Returns a reference to the (m,n,k)-th power coefficient of this
