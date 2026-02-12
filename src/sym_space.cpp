@@ -109,23 +109,48 @@ unsigned int C3(const unsigned int &n_qubits, const int &h1, const int &h2, cons
     return fact(n_qubits) / (fact(w1) * fact(w2) * fact(w3) * fact(w4) * fact(N1 - w1) * fact(N2 - w2) * fact(N3 - w3) * fact(N4 - w4));
 }
 
-// Returns sum_h7 R_{h1h2h3}^{-1} C3(h)
+// Checks that the weights h1, h2, h3 can be obtained from a relation akin to h3 = h1 + h2. Returns true if they can't
+static bool check_pairwise_weights(const unsigned int &n_qubits, const int &h1, const int &h2, const int &h3) {
+    return (h3 < std::abs(h1 - h2) || h3 > std::min(h1 + h2, static_cast<int>(2 * n_qubits) - h1 - h2));
+}
+
+// Returns sum_h7 R_{h1h2h3}^{-1} C3(h). Checked for all possibilities with n_qubits = 3 and they are correctly generated. Could compare with a direct delta sum for bigger n_qubits
 double reduced_C3(const unsigned int &n_qubits, const int &h1, const int &h2, const int &h3, const int &h4, const int &h5, const int &h6) {
+    if (check_pairwise_weights(n_qubits, h1, h2, h3) || check_pairwise_weights(n_qubits, h1, h4, h5) || check_pairwise_weights(n_qubits, h2, h4, h6)) {
+        return 0;
+    }
     double res = 0;
-    int w1, w2, w3, w4, N1, N2, N3, N4;
-    N1 = n_qubits - (h1 + h2 + h3) / 2;
-    N2 = (h1 - h2 + h3) / 2;
-    N3 = (-h1 + h2 + h3) / 2;
-    N4 = (h1 + h2 - h3) / 2;
+    double temp = 0;
+    int c1, c2, c3, c4, w1, w2, w3, w4, N1, N2, N3, N4;
+    c1 = (h1 + h2 + h3);
+    c2 = (h1 - h2 + h3);
+    c3 = (-h1 + h2 + h3);
+    c4 = (h1 + h2 - h3);
+    if (c1 % 2 || c2 % 2 || c3 % 2 || c4 % 2) {
+        return 0;
+    }
+    N1 = n_qubits - c1 / 2;
+    N2 = c2 / 2;
+    N3 = c3 / 2;
+    N4 = c4 / 2;
     for (int h7 = 0; h7 <= n_qubits; h7++) {
-        w1 = (-h1 - h2 - h3 + h4 + h5 + h6 + h7) / 4;
-        w2 = (h1 - h2 + h3 + h4 - h5 + h6 - h7) / 4;
-        w3 = (-h1 + h2 + h3 + h4 + h5 - h6 - h7) / 4;
-        w4 = (h1 + h2 - h3 + h4 - h5 - h6 + h7) / 4;
-        if (w1 < 0 || w2 < 0 || w3 < 0 || w4 < 0 || N1 - w1 < 0 || N2 - w2 < 0 || N3 - w3 < 0 || N4 - w4 < 0) {
+        if (check_pairwise_weights(n_qubits, h1, h6, h7) || check_pairwise_weights(n_qubits, h2, h5, h7) || check_pairwise_weights(n_qubits, h3, h4, h7)) {
             continue;
         }
-        res += double_binom(N1, w1) * double_binom(N2, w2) * double_binom(N3, w3) * double_binom(N4, w4);
+        w1 = (-h1 - h2 - h3 + h4 + h5 + h6 + h7);
+        w2 = (h1 - h2 + h3 + h4 - h5 + h6 - h7);
+        w3 = (-h1 + h2 + h3 + h4 + h5 - h6 - h7);
+        w4 = (h1 + h2 - h3 + h4 - h5 - h6 + h7);
+        if (w1 < 0 || w1 % 4 || w2 < 0 || w2 % 4 || w3 < 0 || w3 % 4 || w4 < 0 || w4 % 4) {
+            continue;
+        }
+        temp = double_binom(N1, w1/4) * double_binom(N2, w2/4) * double_binom(N3, w3/4) * double_binom(N4, w4/4);
+        res += temp;
+        std::cout << "Full C_3(" << h1 << ", " << h2 << ", " << h3 << ", " << h4 << ", " << h5 << ", " << h6 << ", " << h7 << ") = " << temp << std::endl;
+        std::cout << "N1 = " << N1 << " w1 = " << w1/4 << " N1 choose w1 = " << double_binom(N1, w1/4) << std::endl;
+        std::cout << "N2 = " << N2 << " w2 = " << w2/4 << " N2 choose w2 = " << double_binom(N2, w2/4) << std::endl;
+        std::cout << "N3 = " << N3 << " w3 = " << w3/4 << " N3 choose w3 = " << double_binom(N3, w3/4) << std::endl;
+        std::cout << "N4 = " << N4 << " w4 = " << w4/4 << " N4 choose w4 = " << double_binom(N4, w4/4) << std::endl;
     }
     return res;
 }
@@ -140,6 +165,7 @@ polynomial3 get_pol_gmnk(unsigned int const &n_qubits, unsigned int const &p, un
     std::vector<polynomial> Kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
     std::vector<double> Nchoose = double_binoms(n_qubits);
     double norm = 1.0 / (1 << n_qubits);
+    // The limits of the inner sums can be reduced, as j1 forces all possible values of j2 and j3 to stay within some bounds, with p, q, r fixed. Bug in tensor product constructor
     for (int j1 = 0; j1 <= n_qubits; j1++) {
         for (int j2 = 0; j2 <= n_qubits; j2++) {
             for (int j3 = 0; j3 <= n_qubits; j3++) {
@@ -166,6 +192,7 @@ Eigen::Tensor<double, 3> get_gmnk(unsigned int const &n_qubits, unsigned int con
 
 // Returns g_mnk(p,q,r) for (p,q,r) in all symmetric space, stored in the order p, q, r
 std::vector<polynomial3> get_all_gmnk(unsigned int const &n_qubits) {
+    std::cout << "Calculating all gmnk" << std::endl;
     std::vector<polynomial3> gmnk;
     gmnk.reserve((n_qubits + 1) * (n_qubits + 1) * (n_qubits + 1));
     for (int r = 0; r <= n_qubits; r++) {
@@ -175,6 +202,7 @@ std::vector<polynomial3> get_all_gmnk(unsigned int const &n_qubits) {
             }
         }
     }
+    std::cout << "Finished calculating all gmnk" << std::endl;
     return gmnk;
 }
 

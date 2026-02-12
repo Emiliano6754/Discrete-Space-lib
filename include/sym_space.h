@@ -28,7 +28,7 @@ Eigen::Tensor<double, 3> get_Rmnk(const unsigned int &n_qubits);
 // Returns the number of combinations of 3 field variables, with fixed weights h. This is exact, but overflows quickly
 unsigned int C3(const unsigned int &n_qubits, const int &h1, const int &h2, const int &h3, const int &h4, const int &h5, const int &h6, const int &h7);
 
-// Returns sum_h7 R_{h1h2h3}^{-1} C3(h)
+// Returns sum_h7 R_{h1h2h3}^{-1} C3(h). Checked for all possibilities with n_qubits = 3 and they are correctly generated. Could compare with a direct delta sum for bigger n_qubits
 double reduced_C3(const unsigned int &n_qubits, const int &h1, const int &h2, const int &h3, const int &h4, const int &h5, const int &h6);
 
 // Returns renormalized g_mnk(p,q,r) as a polynomial on m, n, k, with p, q, r as parameters. To get g_mnk, evaluate gmnk with binom_eval or output as tensor with as_binom_tensor. If p, q, r are not valid weights, returns a zero polynomial
