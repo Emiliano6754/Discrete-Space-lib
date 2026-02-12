@@ -71,24 +71,18 @@ void polynomial::print() const {
 
 // Build a polynomial of fixed rank, with all coefficients set to zero
 polynomial3::polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3) : n_rank1(rank1), n_rank2(rank2), n_rank3(rank3), coeffs(std::make_unique<double[]>((rank1+1)*(rank2+1)*(rank3+1))) {
-    for (int j = 0; j <= rank3; j++) {
+    for (int l = 0; l <= rank3; l++) {
         for (int k = 0; k <= rank2; k++) {
-            for (int l = 0; l <= rank1; l++) {
+            for (int j = 0; j <= rank1; j++) {
                 (*this)(j, k, l) = 0;
             }
         }
     }
 }
 
-// Builds a polynomial from its coefficients
-polynomial3::polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3, std::unique_ptr<double[]> const &in_coeffs) : n_rank1(rank1), n_rank2(rank2), n_rank3(rank3), coeffs(std::make_unique<double[]>((rank1+1)*(rank2+1)*(rank3+1))) {
-    for (int j = 0; j <= rank3; j++) {
-        for (int k = 0; k <= rank2; k++) {
-            for (int l = 0; l <= rank1; l++) {
-                (*this)(j, k, l) = in_coeffs[l + (k + j * (rank2 + 1)) * (rank1 + 1)];
-            }
-        }
-    }
+// Builds a polynomial from its coefficients. Invalidates in_coeffs to avoid copying when possible
+polynomial3::polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3, std::unique_ptr<double[]> &in_coeffs) : n_rank1(rank1), n_rank2(rank2), n_rank3(rank3), coeffs(std::make_unique<double[]>((rank1+1)*(rank2+1)*(rank3+1))) {
+    coeffs = std::move(in_coeffs);
 }
 
 // Copy constructor
@@ -103,9 +97,9 @@ polynomial3::polynomial3(polynomial3 &&other) : n_rank1(other.n_rank1), n_rank2(
 
 // Constructs a polynomial over three variables from three polynomials, each over one variable
 polynomial3::polynomial3(polynomial const &p1, polynomial const &p2, polynomial const &p3) : n_rank1(p1.rank()), n_rank2(p2.rank()), n_rank3(p3.rank()), coeffs(std::make_unique<double[]>((p1.rank()+1)*(p2.rank()+1)*(p3.rank()+1))) {
-    for (int j = 0; j <= n_rank3; j++) {
+    for (int l = 0; l <= n_rank3; l++) {
         for (int k = 0; k <= n_rank2; k++) {
-            for (int l = 0; l <= n_rank1; l++) {
+            for (int j = 0; j <= n_rank1; j++) {
                 (*this)(j, k, l) = p1[j] * p2[k] * p3[l];
             }
         }
@@ -116,11 +110,11 @@ polynomial3::polynomial3(polynomial const &p1, polynomial const &p2, polynomial 
 double const polynomial3::eval(int const &m, int const &n, int const &k) const {
     double res = 0;
     double current_x = 1, current_y = 1, current_z = 1;
-    for (int j = 0; j <= n_rank3; j++) {
+    for (int l = 0; l <= n_rank3; l++) {
         current_y = 1;
         for (int k = 0; k <= n_rank2; k++) {
             current_x = 1;
-            for (int l = 0; l <= n_rank1; l++) {
+            for (int j = 0; j <= n_rank1; j++) {
                 res += (*this)(j, k, l) * current_x * current_y * current_z;
                 current_x *= m;
             }
@@ -139,9 +133,9 @@ double polynomial3::binom_eval(unsigned int const &N, int const &m, int const &n
 
 // Multiplies all coefficients of this by scalar
 polynomial3& polynomial3::mult(double const &scalar) & {
-    for (int j = 0; j <= n_rank3; j++) {
+    for (int l = 0; l <= n_rank3; l++) {
         for (int k = 0; k <= n_rank2; k++) {
-            for (int l = 0; l <= n_rank1; l++) {
+            for (int j = 0; j <= n_rank1; j++) {
                 (*this)(j,k,l) *= scalar;
             }
         }
@@ -151,9 +145,9 @@ polynomial3& polynomial3::mult(double const &scalar) & {
 
 // Multiplies all coefficients of this by scalar
 polynomial3&& polynomial3::mult(double const &scalar) && {
-    for (int j = 0; j <= n_rank3; j++) {
+    for (int l = 0; l <= n_rank3; l++) {
         for (int k = 0; k <= n_rank2; k++) {
-            for (int l = 0; l <= n_rank1; l++) {
+            for (int j = 0; j <= n_rank1; j++) {
                 (*this)(j,k,l) *= scalar;
             }
         }
@@ -163,9 +157,9 @@ polynomial3&& polynomial3::mult(double const &scalar) && {
 
 // Sets all coefficients of this to zero
 polynomial3& polynomial3::set_zero() & {
-    for (int j = 0; j <= n_rank3; j++) {
+    for (int l = 0; l <= n_rank3; l++) {
         for (int k = 0; k <= n_rank2; k++) {
-            for (int l = 0; l <= n_rank1; l++) {
+            for (int j = 0; j <= n_rank1; j++) {
                 (*this)(j,k,l) = 0;
             }
         }
@@ -175,9 +169,9 @@ polynomial3& polynomial3::set_zero() & {
 
 // Sets all coefficients of this to zero
 polynomial3&& polynomial3::set_zero() && {
-    for (int j = 0; j <= n_rank3; j++) {
+    for (int l = 0; l <= n_rank3; l++) {
         for (int k = 0; k <= n_rank2; k++) {
-            for (int l = 0; l <= n_rank1; l++) {
+            for (int j = 0; j <= n_rank1; j++) {
                 (*this)(j,k,l) = 0;
             }
         }
@@ -187,7 +181,7 @@ polynomial3&& polynomial3::set_zero() && {
 
 // Returns this polynomial as a tensor, evaluated over all symmetric space
 Eigen::Tensor<double, 3> polynomial3::as_tensor(unsigned int const &n_qubits) const {
-    Eigen::Tensor<double, 3> tensor;
+    Eigen::Tensor<double, 3> tensor(n_rank1 + 1, n_rank2 + 1, n_rank3 + 1);
     tensor.setZero();
     sym_space_loop(n_qubits, [&] (int const &m, int const &n, int const &k) {
         tensor(m, n, k) = eval(m, n, k);
@@ -197,11 +191,13 @@ Eigen::Tensor<double, 3> polynomial3::as_tensor(unsigned int const &n_qubits) co
 
 // Returns this polynomial as a tensor, evaluated over all symmetric space with leading binomials Binom(N, m) * Binom(N, n) * Binom(N, k)
 Eigen::Tensor<double, 3> polynomial3::as_binom_tensor(unsigned int const &n_qubits) const {
-    Eigen::Tensor<double, 3> tensor;
+    Eigen::Tensor<double, 3> tensor(n_rank1 + 1, n_rank2 + 1, n_rank3 + 1);
     tensor.setZero();
+    std::cout << "Converting pol to tensor" << std::endl;
     sym_space_loop(n_qubits, [&] (int const &m, int const &n, int const &k) {
         tensor(m, n, k) = binom_eval(n_qubits, m, n, k);
     });
+    std::cout << "Finished converting pol to tensor" << std::endl;
     return tensor;
 }
 
@@ -227,9 +223,9 @@ double const& polynomial3::operator()(int const &m, int const &n, int const &k) 
 // Adds other to this as polynomials. If this is smaller in any rank to other, a complete copy must be performed in order to address the new compression 
 void polynomial3::operator+=(polynomial3 const &other) {
     if (other.n_rank1 <= n_rank1 && other.n_rank2 <= n_rank2 && other.n_rank3 <= n_rank3) {
-        for (int j = 0; j <= other.n_rank3; j++) {
+        for (int l = 0; l <= other.n_rank3; l++) {
             for (int k = 0; k <= other.n_rank2; k++) {
-                for (int l = 0; l <= other.n_rank1; l++) {
+                for (int j = 0; j <= other.n_rank1; j++) {
                     (*this)(j, k, l) += other(j, k, l);
                 }
             }
@@ -240,15 +236,15 @@ void polynomial3::operator+=(polynomial3 const &other) {
         const int max_rank3 = std::max(n_rank3, other.n_rank3);
         std::unique_ptr<double[]> new_coeffs = std::make_unique<double[]>((max_rank1 + 1) * (max_rank2 + 1) * (max_rank3 + 1));
         unsigned int pos = 0;
-        for (int j = 0; j <= max_rank3; j++) {
+        for (int l = 0; l <= max_rank3; l++) {
             for (int k = 0; k <= max_rank2; k++) {
-                for (int l = 0; l <= max_rank1; l++) {
-                    pos = l + (k + j * (max_rank2 + 1)) * (max_rank1 + 1);
+                for (int j = 0; j <= max_rank1; j++) {
+                    pos = j + (k + l * (max_rank2 + 1)) * (max_rank1 + 1);
                     new_coeffs[pos] = 0;
-                    if (l <= n_rank1 && k <= n_rank2 && j <= n_rank3) {
+                    if (j <= n_rank1 && k <= n_rank2 && l <= n_rank3) {
                         new_coeffs[pos] += (*this)(j, k, l);
                     }
-                    if (l <= other.n_rank1 && k <= other.n_rank2 && j <= other.n_rank3) {
+                    if (j <= other.n_rank1 && k <= other.n_rank2 && l <= other.n_rank3) {
                         new_coeffs[pos] += other(j, k, l);
                     }
                 }
@@ -268,16 +264,16 @@ polynomial3 polynomial3::operator+(polynomial3 const &other) {
     const int max_rank3 = std::max(n_rank3, other.n_rank3);
     std::unique_ptr<double[]> new_coeffs = std::make_unique<double[]>((max_rank1 + 1) * (max_rank2 + 1) * (max_rank3 + 1));
     unsigned int pos = 0;
-    for (int j = 0; j <= max_rank3; j++) {
+    for (int l = 0; l <= max_rank3; l++) {
         for (int k = 0; k <= max_rank2; k++) {
-            for (int l = 0; l <= max_rank1; l++) {
-                pos = l + (k + j * (max_rank2 + 1)) * (max_rank1 + 1);
+            for (int j = 0; j <= max_rank1; j++) {
+                pos = j + (k + l * (max_rank2 + 1)) * (max_rank1 + 1);
                 new_coeffs[pos] = 0;
-                if (l <= n_rank1 && k <= n_rank2 && j <= n_rank3) {
-                    new_coeffs[pos] += coeffs[l + (k + j * (n_rank2 + 1)) * (n_rank1 + 1)];
+                if (j <= n_rank1 && k <= n_rank2 && l <= n_rank3) {
+                    new_coeffs[pos] += (*this)(j, k, l);
                 }
-                if (l <= other.n_rank1 && k <= other.n_rank2 && j <= other.n_rank3) {
-                    new_coeffs[pos] += other.coeffs[l + (k + j * (other.n_rank2 + 1)) * (other.n_rank1 + 1)];
+                if (j <= other.n_rank1 && k <= other.n_rank2 && l <= other.n_rank3) {
+                    new_coeffs[pos] += other(j, k, l);
                 }
             }
         }

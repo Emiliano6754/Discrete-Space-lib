@@ -31,8 +31,8 @@ class polynomial3{
 public:
     // Build a polynomial of fixed rank, with all coefficients set to zero
     polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3);
-    // Builds a polynomial from its coefficients
-    polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3, std::unique_ptr<double[]> const &in_coeffs);
+    // Builds a polynomial from its coefficients. Invalidates in_coeffs to avoid copying when possible
+    polynomial3(unsigned int const &rank1, unsigned int const &rank2, unsigned int const &rank3, std::unique_ptr<double[]> &in_coeffs);
     // Copy constructor
     polynomial3(polynomial3 const &other);
     // Move constructor
