@@ -155,6 +155,82 @@ polynomial3&& polynomial3::mult(double const &scalar) && {
     return std::move(*this);
 }
 
+// Sums all coefficients of other, multiplied by scalar, to this
+polynomial3& polynomial3::sum_mult(polynomial3 const& other, double const &scalar) & {
+    if (other.n_rank1 <= n_rank1 && other.n_rank2 <= n_rank2 && other.n_rank3 <= n_rank3) {
+        for (int l = 0; l <= other.n_rank3; l++) {
+            for (int k = 0; k <= other.n_rank2; k++) {
+                for (int j = 0; j <= other.n_rank1; j++) {
+                    (*this)(j, k, l) += scalar * other(j, k, l);
+                }
+            }
+        }
+    } else {
+        const int max_rank1 = std::max(n_rank1, other.n_rank1);
+        const int max_rank2 = std::max(n_rank2, other.n_rank2);
+        const int max_rank3 = std::max(n_rank3, other.n_rank3);
+        std::unique_ptr<double[]> new_coeffs = std::make_unique<double[]>((max_rank1 + 1) * (max_rank2 + 1) * (max_rank3 + 1));
+        unsigned int pos = 0;
+        for (int l = 0; l <= max_rank3; l++) {
+            for (int k = 0; k <= max_rank2; k++) {
+                for (int j = 0; j <= max_rank1; j++) {
+                    pos = j + (k + l * (max_rank2 + 1)) * (max_rank1 + 1);
+                    new_coeffs[pos] = 0;
+                    if (j <= n_rank1 && k <= n_rank2 && l <= n_rank3) {
+                        new_coeffs[pos] += (*this)(j, k, l);
+                    }
+                    if (j <= other.n_rank1 && k <= other.n_rank2 && l <= other.n_rank3) {
+                        new_coeffs[pos] += scalar * other(j, k, l);
+                    }
+                }
+            }
+        }
+        coeffs = std::move(new_coeffs);
+        n_rank1 = max_rank1;
+        n_rank2 = max_rank2;
+        n_rank3 = max_rank3;
+    }
+    return (*this);
+}
+
+// Sums all coefficients of other, multiplied by scalar, to this
+polynomial3&& polynomial3::sum_mult(polynomial3 const& other, double const &scalar) && {
+    if (other.n_rank1 <= n_rank1 && other.n_rank2 <= n_rank2 && other.n_rank3 <= n_rank3) {
+        for (int l = 0; l <= other.n_rank3; l++) {
+            for (int k = 0; k <= other.n_rank2; k++) {
+                for (int j = 0; j <= other.n_rank1; j++) {
+                    (*this)(j, k, l) += scalar * other(j, k, l);
+                }
+            }
+        }
+    } else {
+        const int max_rank1 = std::max(n_rank1, other.n_rank1);
+        const int max_rank2 = std::max(n_rank2, other.n_rank2);
+        const int max_rank3 = std::max(n_rank3, other.n_rank3);
+        std::unique_ptr<double[]> new_coeffs = std::make_unique<double[]>((max_rank1 + 1) * (max_rank2 + 1) * (max_rank3 + 1));
+        unsigned int pos = 0;
+        for (int l = 0; l <= max_rank3; l++) {
+            for (int k = 0; k <= max_rank2; k++) {
+                for (int j = 0; j <= max_rank1; j++) {
+                    pos = j + (k + l * (max_rank2 + 1)) * (max_rank1 + 1);
+                    new_coeffs[pos] = 0;
+                    if (j <= n_rank1 && k <= n_rank2 && l <= n_rank3) {
+                        new_coeffs[pos] += (*this)(j, k, l);
+                    }
+                    if (j <= other.n_rank1 && k <= other.n_rank2 && l <= other.n_rank3) {
+                        new_coeffs[pos] += scalar * other(j, k, l);
+                    }
+                }
+            }
+        }
+        coeffs = std::move(new_coeffs);
+        n_rank1 = max_rank1;
+        n_rank2 = max_rank2;
+        n_rank3 = max_rank3;
+    }
+    return std::move(*this);
+}
+
 // Sets all coefficients of this to zero
 polynomial3& polynomial3::set_zero() & {
     for (int l = 0; l <= n_rank3; l++) {

@@ -47,6 +47,10 @@ public:
     polynomial3& mult(double const &scalar) &;
     // Multiplies all coefficients of this by scalar
     polynomial3&& mult(double const &scalar) &&;
+    // Sums all coefficients of other, multiplied by scalar, to this
+    polynomial3& sum_mult(polynomial3 const& other, double const &scalar) &;
+    // Sums all coefficients of other, multiplied by scalar, to this
+    polynomial3&& sum_mult(polynomial3 const& other, double const &scalar) &&;
     // Sets all coefficients of this to zero
     polynomial3& set_zero() &;
     // Sets all coefficients of this to zero
