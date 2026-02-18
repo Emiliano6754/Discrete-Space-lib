@@ -39,6 +39,8 @@ public:
     polynomial3(polynomial3 &&other);
     // Constructs a polynomial over three variables from three polynomials, each over one variable
     polynomial3(polynomial const &p1, polynomial const &p2, polynomial const &p3);
+    // Prints this for debugging
+    void const print() const;
     // Returns this evaluated at (m,n,k)
     double const eval(int const &m, int const &n, int const &k) const;
     // Calculates this polynomial multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k)

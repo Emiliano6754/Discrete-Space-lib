@@ -80,7 +80,7 @@ Eigen::Tensor<double, 3> sym_space_mask(const unsigned int &n_qubits) {
 
 // Returns the value of R_{m,n,k}
 inline double Rmnk(const unsigned int &n_qubits, const unsigned int &m, const unsigned int &n, const unsigned int &k) {
-    return static_cast<double>(fact(n_qubits)) / static_cast<double>( fact(n_qubits - (m+n+k)/2) * fact((-m+n+k)/2) * fact((m-n+k)/2) * fact((m+n-k)/2) );
+    return double_binom(n_qubits, m) * double_binom(m, (m+n-k)/2) * double_binom(n_qubits - m, (-m + n + k)/2);
 }
 
 // Returns a tensor filled with the values R_{m,n,k}

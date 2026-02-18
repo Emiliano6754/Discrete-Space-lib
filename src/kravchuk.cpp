@@ -1,6 +1,7 @@
 #include "kravchuk.h"
 #include<iostream>
 #include<sym_space.h>
+#include<limits>
 
 // Returns a double approximation of Binom(N,k)
 static double binom(const unsigned int &N, const unsigned int &k) {
@@ -33,12 +34,12 @@ polynomial::polynomial(polynomial const &other): n_rank(other.n_rank), coeffs(st
 }
 
 polynomial::polynomial(polynomial const &first, polynomial const &second, int const &N): n_rank(second.rank() + 1), coeffs(std::make_unique<double[]>(n_rank + 1)) {
-    coeffs[0] = (N * second[0] - (N - static_cast<int>(n_rank) + 2) * first[0]) / static_cast<int>(n_rank);
+    coeffs[0] = (N * second[0] - (N - static_cast<int>(n_rank) + 2) * first[0]) / static_cast<double>(n_rank);
     for (int j = 1; j <= first.rank(); j++) {
-        coeffs[j] = (N * second[j] - 2 * second[j-1] - (N - static_cast<int>(n_rank) + 2) * first[j]) / static_cast<int>(n_rank);
+        coeffs[j] = (N * second[j] - 2 * second[j-1] - (N - static_cast<int>(n_rank) + 2) * first[j]) / static_cast<double>(n_rank);
     }
-    coeffs[second.rank()] = (N * second[second.rank()] - 2 * second[second.rank() - 1]) / static_cast<int>(n_rank);
-    coeffs[n_rank] = - 2 * second[second.rank()] / static_cast<int>(n_rank);
+    coeffs[second.rank()] = (N * second[second.rank()] - 2 * second[second.rank() - 1]) / static_cast<double>(n_rank);
+    coeffs[n_rank] = - 2 * second[second.rank()] / static_cast<double>(n_rank);
 }
 
 // Returns n-th coefficient of this
@@ -106,26 +107,37 @@ polynomial3::polynomial3(polynomial const &p1, polynomial const &p2, polynomial 
     }
 }
 
+// Prints this for debugging
+void const polynomial3::print() const {
+    std::cout << std::defaultfloat << std::setprecision(std::numeric_limits<double>::max_digits10);
+    for (int l = 0; l <= n_rank3; l++) {
+        for (int k = 0; k <= n_rank2; k++) {
+            for (int j = 0; j <= n_rank1; j++) {
+                std::cout << " + " << (*this)(j, k, l) << " m^" << j << " n^" << k << " k^" << l;
+            }
+        }
+    }
+    std::cout << "\n";
+}
+
 // Returns this evaluated at (m,n,k)
 double const polynomial3::eval(int const &m, int const &n, int const &k) const {
-    double res = 0;
-    double current_x = 1, current_y = 1, current_z = 1;
-    for (int l = 0; l <= n_rank3; l++) {
-        current_y = 1;
-        for (int k = 0; k <= n_rank2; k++) {
-            current_x = 1;
-            for (int j = 0; j <= n_rank1; j++) {
-                res += (*this)(j, k, l) * current_x * current_y * current_z;
-                current_x *= m;
+    double res = 0, pol1 = 0, pol2 = 0;
+    for (int l = n_rank3; l >= 0; l--) {
+        pol2 = 0;
+        for (int k = n_rank2; k >= 0; k--) {
+            pol1 = 0;
+            for (int j = n_rank1; j >= 0; j--) {
+                pol1 = pol1 * m + (*this)(j, k, l);
             }
-            current_y *= n;
+            pol2 = pol2 * n + pol1;
         }
-        current_z *= k;
+        res = res * k + pol2;
     }
     return res;
 }
 
-// Calculates this polynomial multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k). This uses double definitions of Binom(N, m), so that it is not exact
+// Calculates this polynomial multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k). This uses double definitions of Binom(N, m), so that it is not exact. Saves a buffer of binomials for optimization, so that multiple executions of binom_eval with different N are incorrect
 double polynomial3::binom_eval(unsigned int const &N, int const &m, int const &n, int const &k) const {
     static std::vector<double> binoms = binom(N);
     return binoms[m] * binoms[n] * binoms[k] * eval(m, n, k);
@@ -156,7 +168,7 @@ polynomial3&& polynomial3::mult(double const &scalar) && {
 }
 
 // Sums all coefficients of other, multiplied by scalar, to this
-polynomial3& polynomial3::sum_mult(polynomial3 const& other, double const &scalar) & {
+polynomial3& polynomial3::sum_mult(polynomial3 const &other, double const &scalar) & {
     if (other.n_rank1 <= n_rank1 && other.n_rank2 <= n_rank2 && other.n_rank3 <= n_rank3) {
         for (int l = 0; l <= other.n_rank3; l++) {
             for (int k = 0; k <= other.n_rank2; k++) {
@@ -390,7 +402,7 @@ std::vector<polynomial> get_Kravchuk_pols(unsigned int const &max_rank, unsigned
     std::unique_ptr<double[]> second = std::make_unique<double[]>(max_rank);
     // Set all values to 0 first to avoid any possible issues
     for (int j = 0; j <= max_rank; j++) {
-        first[0] = second[0] = 0;
+        first[j] = second[j] = 0;
     }
     first[0] = 1;
     second[0] = N;
