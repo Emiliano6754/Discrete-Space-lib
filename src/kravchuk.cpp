@@ -170,7 +170,7 @@ void const polynomial3::print() const {
 }
 
 // Returns this evaluated at (m,n,k)
-double const polynomial3::eval(int const &m, int const &n, int const &k) const {
+double polynomial3::eval(int const &m, int const &n, int const &k) const {
     double res = 0, pol1 = 0, pol2 = 0;
     for (int l = n_rank3; l >= 0; l--) {
         pol2 = 0;
@@ -416,4 +416,176 @@ polynomial3 polynomial3::operator+(polynomial3 const &other) {
         }
     }
     return polynomial3(max_rank1, max_rank2, max_rank3, new_coeffs);
+}
+
+// Build a kravchuk expansion for a symmetric function of n_qubits, with all coefficients set to zero
+kravchuk_exp::kravchuk_exp(unsigned int const &n_qubits) : n_qubits(n_qubits) {
+    coeffs = Eigen::Tensor<double, 3>(n_qubits + 1, n_qubits + 1, n_qubits + 1).setZero();
+    kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
+    binoms = binom(n_qubits);
+}
+
+// Builds a kravchuk expansion for a symmetric function of n_qubits. Copies in_coeffs as coefficients
+kravchuk_exp::kravchuk_exp(unsigned int const &n_qubits, Eigen::Tensor<double, 3> &in_coeffs) : n_qubits(n_qubits), coeffs(in_coeffs) {
+    kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
+    binoms = binom(n_qubits);
+}
+
+// Builds a kravchuk expansion for a symmetric function of n_qubits, from an rvalue tensor as coefficients
+kravchuk_exp::kravchuk_exp(unsigned int const &n_qubits, Eigen::Tensor<double, 3> &&in_coeffs) : n_qubits(n_qubits) {
+    coeffs = std::move(in_coeffs);
+    kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
+    binoms = binom(n_qubits);
+}
+
+// Copy constructor
+kravchuk_exp::kravchuk_exp(kravchuk_exp const &other) : n_qubits(other.n_qubits), coeffs(other.coeffs), kravchuks(other.kravchuks), binoms(other.binoms) {}
+
+// Move constructor
+kravchuk_exp::kravchuk_exp(kravchuk_exp &&other) {
+    n_qubits = std::move(other.n_qubits);
+    coeffs = std::move(other.coeffs);
+    kravchuks = std::move(other.kravchuks);
+    binoms = std::move(other.binoms);
+}
+
+// Prints this for debugging
+void const kravchuk_exp::print() const {
+
+}
+
+// Returns this evaluated at (m,n,k)
+double kravchuk_exp::eval(int const &m, int const &n, int const &k) const {
+    double res = 0;
+    for (int r = 0; r <= n_qubits; r++) {
+        for (int q = 0; q <= n_qubits; q++) {
+            for (int p = 0; p <= n_qubits; p++) {
+                res += coeffs(p, q, r) * kravchuks[p](m) * kravchuks[q](n) * kravchuks[r](k);
+            }
+        }
+    }
+    return res;
+}
+
+// Calculates this evaluated at (m,n,k), multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k)
+double kravchuk_exp::binom_eval(int const &m, int const &n, int const &k) const {
+    return binoms[m] * binoms[n] * binoms[k] * eval(m, n, k);
+}
+
+// Multiplies all coefficients of this by scalar
+kravchuk_exp& kravchuk_exp::mult(double const &scalar) & {
+    coeffs = scalar * coeffs;
+    return *this;
+}
+// Multiplies all coefficients of this by scalar
+kravchuk_exp&& kravchuk_exp::mult(double const &scalar) && {
+    coeffs = scalar * coeffs;
+    return std::move(*this);
+}
+
+// Sums all coefficients of other, multiplied by scalar, to this. Only does so if n_qubits for this and other is the same, otherwise it does nothing
+kravchuk_exp& kravchuk_exp::sum_mult(kravchuk_exp const& other, double const &scalar) & {
+    if (n_qubits == other.n_qubits) {
+        coeffs = coeffs + scalar * other.coeffs;
+    }
+    return *this;
+}
+
+// Sums all coefficients of other, multiplied by scalar, to this
+kravchuk_exp&& kravchuk_exp::sum_mult(kravchuk_exp const& other, double const &scalar) && {
+    if (n_qubits == other.n_qubits) {
+        coeffs = coeffs + scalar * other.coeffs;
+    }
+    return std::move(*this);
+}
+
+// Sets all coefficients of this to zero
+kravchuk_exp& kravchuk_exp::set_zero() & {
+    coeffs.setZero();
+    return *this;
+}
+
+// Sets all coefficients of this to zero
+kravchuk_exp&& kravchuk_exp::set_zero() && {
+    coeffs.setZero();
+    return std::move(*this);
+}
+
+// Copies in_coeffs to this.coeffs
+kravchuk_exp& kravchuk_exp::set_coeffs(Eigen::Tensor<double, 3> &in_coeffs) & {
+    coeffs = in_coeffs;
+    return *this;
+}
+
+// Moves in_coeffs to this.coeffs
+kravchuk_exp& kravchuk_exp::set_coeffs(Eigen::Tensor<double, 3> &&in_coeffs) & {
+    coeffs = std::move(in_coeffs);
+    return *this;
+}
+
+
+// Copies in_coeffs to this.coeffs
+kravchuk_exp&& kravchuk_exp::set_coeffs(Eigen::Tensor<double, 3> &in_coeffs) && {
+    coeffs = in_coeffs;
+    return std::move(*this);
+}
+
+// Moves in_coeffs to this.coeffs
+kravchuk_exp&& kravchuk_exp::set_coeffs(Eigen::Tensor<double, 3> &&in_coeffs) && {
+    coeffs = std::move(in_coeffs);
+    return std::move(*this);
+}
+
+// Returns this expansion as a tensor, evaluated over all symmetric space
+Eigen::Tensor<double, 3> kravchuk_exp::as_tensor() const {
+    Eigen::Tensor<double, 3> tensor(n_qubits + 1, n_qubits + 1, n_qubits + 1);
+    tensor.setZero();
+    sym_space_loop(n_qubits, [&] (int const &k, int const &n, int const &m) {
+        tensor(m, n, k) = eval(m, n, k);
+    });
+    return tensor;
+}
+
+// Returns this expansion as a tensor, evaluated over all symmetric space with leading binomials Binom(N, m) * Binom(N, n) * Binom(N, k)
+Eigen::Tensor<double, 3> kravchuk_exp::as_binom_tensor() const {
+    Eigen::Tensor<double, 3> tensor(n_qubits + 1, n_qubits + 1, n_qubits + 1);
+    tensor.setZero();
+    sym_space_loop(n_qubits, [&] (int const &k, int const &n, int const &m) {
+        tensor(m, n, k) = binom_eval(m, n, k);
+    });
+    return tensor;
+}
+
+// Move assignment operator
+kravchuk_exp& kravchuk_exp::operator=(kravchuk_exp &&other) {
+    n_qubits = std::move(other.n_qubits);
+    coeffs = std::move(other.coeffs);
+    kravchuks = std::move(other.kravchuks);
+    binoms = std::move(other.binoms);
+    return *this;
+}
+
+// Returns a reference to the (m,n,k)-th coefficient of this
+double& kravchuk_exp::operator()(int const &m, int const &n, int const &k) {
+    return coeffs(m, n, k);
+}
+// Returns a const reference to the (m,n,k)-th coefficient of this
+double const& kravchuk_exp::operator()(int const &m, int const &n, int const &k) const {
+    return coeffs(m, n, k);
+}
+
+// Adds other to this as expansions. Only does so if n_qubits for this and other is the same, otherwise it does nothing
+void kravchuk_exp::operator+=(kravchuk_exp const &other) {
+    if (n_qubits == other.n_qubits) {
+        coeffs = coeffs + other.coeffs;
+    }
+}
+
+// Returns a new kravchuk_exp, with coefficients equal to the sum of coefficients of both this and other. Only does so if n_qubits for this and other is the same, otherwise it returns an empy kravchuk_exp with n_qubits = this.n_qubits
+kravchuk_exp kravchuk_exp::operator+(kravchuk_exp const &other) {
+    kravchuk_exp res(n_qubits);
+    if (n_qubits == other.n_qubits) {
+        res.coeffs = coeffs + other.coeffs;
+    }
+    return res;
 }
