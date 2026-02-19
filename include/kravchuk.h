@@ -13,7 +13,7 @@ public:
     polynomial(polynomial const &other);
     //  Builds the next Kravchuk polynomial from Kravchuk recurrence relations
     polynomial(polynomial const &first, polynomial const &second, int const &N);
-    // Prints the polynomial in readable form
+    // Prints the polynomial to console in readable form
     void print() const;
     // Returns n-th coefficient of this
     double operator[](unsigned int const &n) const;
@@ -25,6 +25,18 @@ private:
     unsigned int const n_rank;
     std::unique_ptr<double[]> coeffs;
 };
+
+//  Builds the next Kravchuk polynomial from their recurrence relations
+polynomial get_next_Kravchuk(polynomial const &first, polynomial const &second, unsigned int const &N);
+
+// Returns all Kravchuk polynomials from rank 0 to rank max_rank, with N fixed
+std::vector<polynomial> get_Kravchuk_pols(unsigned int const &max_rank, unsigned int const &N);
+
+//  Builds the next Kravchuk polynomial from their recurrence relations
+polynomial get_next_Kravchuk(polynomial const &first, polynomial const &second, unsigned int const &N);
+
+// Returns all Kravchuk polynomials from rank 0 to rank max_rank, with N fixed
+std::vector<polynomial> get_Kravchuk_pols(unsigned int const &max_rank, unsigned int const &N);
 
 // Polynomial over 3 variables
 class polynomial3{
@@ -75,17 +87,5 @@ private:
     unsigned int n_rank1, n_rank2, n_rank3;
     std::unique_ptr<double[]> coeffs;
 };
-
-//  Builds the next Kravchuk polynomial from their recurrence relations
-polynomial get_next_Kravchuk(polynomial const &first, polynomial const &second, unsigned int const &N);
-
-// Returns all Kravchuk polynomials from rank 0 to rank max_rank, with N fixed
-std::vector<polynomial> get_Kravchuk_pols(unsigned int const &max_rank, unsigned int const &N);
-
-//  Builds the next Kravchuk polynomial from their recurrence relations
-polynomial get_next_Kravchuk(polynomial const &first, polynomial const &second, unsigned int const &N);
-
-// Returns all Kravchuk polynomials from rank 0 to rank max_rank, with N fixed
-std::vector<polynomial> get_Kravchuk_pols(unsigned int const &max_rank, unsigned int const &N);
 
 #endif
