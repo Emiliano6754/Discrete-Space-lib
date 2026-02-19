@@ -147,58 +147,49 @@ double reduced_C3(const unsigned int &n_qubits, const int &h1, const int &h2, co
         temp = double_binom(N1, w1/4) * double_binom(N2, w2/4) * double_binom(N3, w3/4) * double_binom(N4, w4/4);
         res += temp;
         std::cout << "Full C_3(" << h1 << ", " << h2 << ", " << h3 << ", " << h4 << ", " << h5 << ", " << h6 << ", " << h7 << ") = " << temp << std::endl;
-        std::cout << "N1 = " << N1 << " w1 = " << w1/4 << " N1 choose w1 = " << double_binom(N1, w1/4) << std::endl;
-        std::cout << "N2 = " << N2 << " w2 = " << w2/4 << " N2 choose w2 = " << double_binom(N2, w2/4) << std::endl;
-        std::cout << "N3 = " << N3 << " w3 = " << w3/4 << " N3 choose w3 = " << double_binom(N3, w3/4) << std::endl;
-        std::cout << "N4 = " << N4 << " w4 = " << w4/4 << " N4 choose w4 = " << double_binom(N4, w4/4) << std::endl;
     }
     return res;
 }
 
-// Returns renormalized g_mnk(p,q,r) as a polynomial on m, n, k, with p, q, r as parameters. To get g_mnk, evaluate gmnk with binom_eval or output as tensor with as_binom_tensor. If p, q, r are not valid weights, returns a zero polynomial
-polynomial3 get_pol_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r) {
-    polynomial3 gmnk(n_qubits, n_qubits, n_qubits);
+// Returns renormalized g_mnk(p,q,r) as a kravchuk_exp on m, n, k, with p, q, r as parameters. To get g_mnk, evaluate gmnk with binom_eval or output as tensor with as_binom_tensor. If p, q, r are not valid weights, returns a zero expansion
+kravchuk_exp get_kravchuk_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r) {
+    kravchuk_exp gmnk(n_qubits);
     // Check if the parameters are valid weights
     if (r < std::abs(static_cast<int>(p) - static_cast<int>(q)) || r > std::min(static_cast<int>(p + q), 2*static_cast<int>(n_qubits) - static_cast<int>(p + q))) {
-        return std::move(gmnk);
+        return gmnk;
     }
-    std::vector<polynomial> Kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
     std::vector<double> Nchoose = double_binoms(n_qubits);
     double norm = 1.0 / (1 << n_qubits);
     // The limits of the inner sums can be reduced, as j1 forces all possible values of j2 and j3 to stay within some bounds, with p, q, r fixed. Bug in tensor product constructor
-    for (int j1 = 0; j1 <= n_qubits; j1++) {
+    for (int j3 = 0; j3 <= n_qubits; j3++) {
         for (int j2 = 0; j2 <= n_qubits; j2++) {
-            for (int j3 = 0; j3 <= n_qubits; j3++) {
-                gmnk += polynomial3(Kravchuks[j1], Kravchuks[j2], Kravchuks[j3]).mult(norm * reduced_C3(n_qubits, p, q, r, j1, j2, j3) / (Nchoose[j1] * Nchoose[j2] * Nchoose[j3]));
+            for (int j1 = 0; j1 <= n_qubits; j1++) {
+                gmnk(j1, j2, j3) = norm * reduced_C3(n_qubits, p, q, r, j1, j2, j3) / (Nchoose[j1] * Nchoose[j2] * Nchoose[j3]);
             }
         }
     }
-    return std::move(gmnk);
+    return gmnk;
 }
 
 // Returns g_mnk(p,q,r) evaluated over all symmetric space, with p, q, r as parameters. If p, q, r are not valid weights, returns a zero tensor
 Eigen::Tensor<double, 3> get_gmnk(unsigned int const &n_qubits, unsigned int const &p, unsigned int const &q, unsigned int const &r) {
-    Eigen::Tensor<double, 3> gmnk(n_qubits + 1, n_qubits + 1, n_qubits + 1);
     // Check if the parameters are valid weights
     if (r < std::abs(static_cast<int>(p) - static_cast<int>(q)) || r > std::min(static_cast<int>(p + q), 2*static_cast<int>(n_qubits) - static_cast<int>(p + q))) {
-        return gmnk.setZero();
+        return Eigen::Tensor<double, 3>(n_qubits + 1, n_qubits + 1, n_qubits + 1).setZero();
     }
-    polynomial3 pol_gmnk = get_pol_gmnk(n_qubits, p, q, r);
-    sym_space_loop(n_qubits, [&](int const &m, int const &n, int const &k) {
-        gmnk(m, n, k) = pol_gmnk.binom_eval(n_qubits, m, n, k);
-    });
-    return gmnk;
+    kravchuk_exp kravchuk_gmnk = get_kravchuk_gmnk(n_qubits, p, q, r);
+    return kravchuk_gmnk.as_binom_tensor();
 }
 
 // Returns g_mnk(p,q,r) for (p,q,r) in all symmetric space, stored in the order p, q, r
-std::vector<polynomial3> get_all_gmnk(unsigned int const &n_qubits) {
+std::vector<kravchuk_exp> get_all_gmnk(unsigned int const &n_qubits) {
     std::cout << "Calculating all gmnk" << std::endl;
-    std::vector<polynomial3> gmnk;
+    std::vector<kravchuk_exp> gmnk;
     gmnk.reserve((n_qubits + 1) * (n_qubits + 1) * (n_qubits + 1));
     for (int r = 0; r <= n_qubits; r++) {
         for (int q = 0; q <= n_qubits; q++) {
             for (int p = 0; p <= n_qubits; p++) {
-                gmnk.emplace_back(get_pol_gmnk(n_qubits, p, q, r));
+                gmnk.emplace_back(get_kravchuk_gmnk(n_qubits, p, q, r));
             }
         }
     }
