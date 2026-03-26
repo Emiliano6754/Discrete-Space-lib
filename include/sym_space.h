@@ -40,6 +40,26 @@ Eigen::Tensor<double, 3> get_gmnk(unsigned int const &n_qubits, unsigned int con
 // Returns g_mnk(p,q,r) for (p,q,r) in all symmetric space, stored in the order p, q, r. For values outside of the symmetric space, returns zero polynomials
 std::vector<kravchuk_exp> get_all_gmnk(unsigned int const &n_qubits);
 
+// Returns the symmetric Q function of a state given by its characteristic function, as an Eigen::Tensor
+template<typename T>
+Eigen::Tensor<double, 3> characteristic_symQ(unsigned int const &n_qubits, unsigned int const &qubitstate_size, Eigen::Tensor<T, 3> &characteristic) {
+    constexpr double SQRT3 = 1.73205080756;
+    static std::vector<kravchuk_exp> gmnk = get_all_gmnk(n_qubits);
+    std::unique_ptr<double[]> sqrt3_buffer = std::make_unique<double[]>(n_qubits + 1);
+    double sqrt3_power = 1;
+    for (int j = 0; j <= n_qubits; j++) {
+        sqrt3_buffer[j] = sqrt3_power;
+        sqrt3_power /= SQRT3;
+    }
+    double norm = 1.0 / (1 << n_qubits);
+    kravchuk_exp exp_symQ(n_qubits);
+    // p is the last index so that it runs faster, for cache efficiency
+    sym_space_loop(n_qubits, [&](int const &r, int const &q, int const &p) {
+        exp_symQ.sum_mult(gmnk[p + (q + r * (n_qubits + 1)) * (n_qubits + 1)], norm * sqrt3_buffer[(p+q+r)/2] * characteristic(p, q, r));
+    });
+    return exp_symQ.as_binom_tensor();
+}
+
 // Returns the P function of S•v evaluated in (m, n, k), assuming v is normalized
 inline double Sv_Pfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Vector3d &v, const unsigned int &m, const unsigned int &n, const unsigned int &k) {
     return std::sqrt(3.0) * (n_qubits - 2.0 * (m * v(0) + n * v(1) + k * v(2) ) ) / qubitstate_size;
