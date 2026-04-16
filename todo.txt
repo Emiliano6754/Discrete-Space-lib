@@ -1,6 +1,7 @@
 - Write library of all common mathematical functions that are used in code, but defined on each file independently, such as factorial, binomial and vector of binomials.
 - Correct Rmnk to use a double approximation of factorial
-- Implement GF2N matrix class and change all instances of Adj to use a specialized GF2N matrix class
 - Implement class of polynomials/tensors stored with 3 indices in sym_space to implement operators with weight dependant definitions. Change get_all_gmnk to use this
 - Parallelize get_all_gmnk. First it would be optimal to solve the previous task
 - Debug why kravchuk_exp tend to crash when n_qubits = 5, 7, 9
+- Implement right multiplication of GF2N matrix by a vector in GF2N. Either implement the inefficient version, assume matrix is symmetric or store both the matrix and the transpose matrix 
+- Change all instances of Adj to use a specialized GF2N matrix class, with methods to add connections and to create a specific type of graph. Also, implement methods to compute important characteristics of the graph
