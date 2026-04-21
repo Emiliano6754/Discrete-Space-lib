@@ -40,7 +40,7 @@ GF2N_matrix::GF2N_matrix(GF2N_matrix &&other) : rows_n(rows_n), columns_n(column
 // Prints this for debugging
 void const GF2N_matrix::print() const {
     for (int j = 0; j < rows_n; j++) {
-        std::cout << (*this)(j) << std::endl;
+        std::cout << (*this)(j).transpose() << std::endl;
     }
     std::cout << "_____________" << std::endl;
 }
@@ -132,18 +132,21 @@ GF2N_matrix GF2N_matrix::inverse() const {
 GF2N_matrix GF2N_matrix::row_echelon() const {
     GF2N_matrix row_echelon(*this);
     unsigned int pivot = 1 << (columns_n - 1);
+    unsigned int current_pivot_row = 0;
     for (unsigned int j = 0; j < columns_n; j++) {
-        // Find pivot elements and order them accordingly 
-        for (unsigned int k = j; k < rows_n; k++) {
+        // Find pivot elements and order them accordingly, starting at the last row not already used as pivot
+        for (unsigned int k = current_pivot_row; k < rows_n; k++) {
             if (row_echelon[k] & pivot) {
-                std::swap(row_echelon[j], row_echelon[k]);
+                std::swap(row_echelon[current_pivot_row], row_echelon[k]);
+                // Eliminate the remaining ones in that pivot, using current_pivot_row
+                for (unsigned int l = 0; l < rows_n; l++) {
+                    if (row_echelon[l] & pivot && l != current_pivot_row) {
+                        row_echelon[l] ^= row_echelon[current_pivot_row];
+                    }
+                }
+                // Next pivot must be in the next row
+                current_pivot_row++;
                 break;
-            }
-        }
-        // Eliminate the remaining ones in that pivot
-        for (unsigned int k = 0; k < rows_n; k++) {
-            if (row_echelon[k] & pivot && k != j) {
-                row_echelon[k] ^= row_echelon[j];
             }
         }
         pivot >>= 1;
@@ -153,18 +156,21 @@ GF2N_matrix GF2N_matrix::row_echelon() const {
 
 void GF2N_matrix::row_reduce() {
     unsigned int pivot = 1 << (columns_n - 1);
+    unsigned int current_pivot_row = 0;
     for (unsigned int j = 0; j < columns_n; j++) {
-        // Find pivot elements and order them accordingly 
-        for (unsigned int k = j; k < rows_n; k++) {
+        // Find pivot elements and order them accordingly, starting at the last row not already used as pivot
+        for (unsigned int k = current_pivot_row; k < rows_n; k++) {
             if (matrix_rows[k] & pivot) {
-                std::swap(matrix_rows[j], matrix_rows[k]);
+                std::swap(matrix_rows[current_pivot_row], matrix_rows[k]);
+                // Eliminate the remaining ones in that pivot, using current_pivot_row
+                for (unsigned int l = 0; l < rows_n; l++) {
+                    if (matrix_rows[l] & pivot && l != current_pivot_row) {
+                        matrix_rows[l] ^= matrix_rows[current_pivot_row];
+                    }
+                }
+                // Next pivot must be in the next row
+                current_pivot_row++;
                 break;
-            }
-        }
-        // Eliminate the remaining ones in that pivot
-        for (unsigned int k = 0; k < rows_n; k++) {
-            if (matrix_rows[k] & pivot && k != j) {
-                matrix_rows[k] ^= matrix_rows[j];
             }
         }
         pivot >>= 1;
