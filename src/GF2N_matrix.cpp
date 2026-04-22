@@ -177,6 +177,16 @@ void GF2N_matrix::row_reduce() {
     }
 }
 
+// Computes the rank of this by row_reducing in place
+unsigned int GF2N_matrix::rank_in_place() {
+    row_reduce();
+    unsigned int rank = 0;
+    for (int j = 0; j < rows_n; j++) {
+        rank += (std::popcount(matrix_rows[j]) > 0);
+    }
+    return rank;
+}
+
 unsigned int GF2N_matrix::rank() const {
     GF2N_matrix row_echelon = this->row_echelon();
     unsigned int rank = 0;

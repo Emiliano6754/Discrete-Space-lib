@@ -36,6 +36,8 @@ public:
     GF2N_matrix row_echelon() const;
     // Row reduces to row-echelon form in place
     void row_reduce();
+    // Computes the rank of this by row_reducing in place
+    unsigned int rank_in_place();
     // Returns the rank of this
     unsigned int rank() const;
     // Returns (rows_n, columns_n) as an std::pair<unsigned int>
