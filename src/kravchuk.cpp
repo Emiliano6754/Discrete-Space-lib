@@ -97,22 +97,28 @@ std::unique_ptr<double[]> get_next_Kravchuk(std::unique_ptr<double[]> const &fir
 }
 
 // Returns all Kravchuk polynomials from rank 0 to rank max_rank, with N fixed. Returns at least 2 for optimization
-std::vector<polynomial> get_Kravchuk_pols(unsigned int const &max_rank, unsigned int const &N) {
-    std::vector<polynomial> pols;
-    pols.reserve(max_rank+1);
-    std::unique_ptr<double[]> first = std::make_unique<double[]>(max_rank);
-    std::unique_ptr<double[]> second = std::make_unique<double[]>(max_rank);
-    // Set all values to 0 first to avoid any possible issues
-    for (int j = 0; j <= max_rank; j++) {
-        first[j] = second[j] = 0;
+std::vector<polynomial> const& get_Kravchuk_pols(unsigned int const &max_rank, unsigned int const &N) {
+    static unsigned int current_rank = 0, current_N = 0;
+    static std::vector<polynomial> pols;
+
+    if (N != current_N) {
+        pols.clear();
+        pols.reserve(max_rank + 1);
+        std::unique_ptr<double[]> first = std::make_unique<double[]>(max_rank);
+        std::unique_ptr<double[]> second = std::make_unique<double[]>(max_rank);
+        // Set all values to 0 first to avoid any possible issues
+        for (int j = 0; j <= max_rank; j++) {
+            first[j] = second[j] = 0;
+        }
+        first[0] = 1;
+        second[0] = N;
+        second[1] = -2;
+        pols.emplace_back(0, first);
+        pols.emplace_back(1, second);
+        current_rank = 2;
     }
-    first[0] = 1;
-    second[0] = N;
-    second[1] = -2;
-    pols.emplace_back(0, first);
-    pols.emplace_back(1, second);
-    unsigned int current_rank = 2;
-    while(current_rank <= max_rank) {
+    while (max_rank > current_rank) {
+        pols.reserve(max_rank + 1);
         pols.emplace_back(pols[current_rank - 2], pols[current_rank - 1], N);
         current_rank++;
     }
@@ -421,41 +427,51 @@ polynomial3 polynomial3::operator+(polynomial3 const &other) {
 // Build a kravchuk expansion for a symmetric function of n_qubits, with all coefficients set to zero
 kravchuk_exp::kravchuk_exp(unsigned int const &n_qubits) : n_qubits(n_qubits) {
     coeffs = Eigen::Tensor<double, 3>(n_qubits + 1, n_qubits + 1, n_qubits + 1).setZero();
-    kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
     binoms = binom(n_qubits);
 }
 
 // Builds a kravchuk expansion for a symmetric function of n_qubits. Copies in_coeffs as coefficients
 kravchuk_exp::kravchuk_exp(unsigned int const &n_qubits, Eigen::Tensor<double, 3> &in_coeffs) : n_qubits(n_qubits), coeffs(in_coeffs) {
-    kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
     binoms = binom(n_qubits);
 }
 
 // Builds a kravchuk expansion for a symmetric function of n_qubits, from an rvalue tensor as coefficients
 kravchuk_exp::kravchuk_exp(unsigned int const &n_qubits, Eigen::Tensor<double, 3> &&in_coeffs) : n_qubits(n_qubits) {
     coeffs = std::move(in_coeffs);
-    kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
     binoms = binom(n_qubits);
 }
 
 // Copy constructor
-kravchuk_exp::kravchuk_exp(kravchuk_exp const &other) : n_qubits(other.n_qubits), coeffs(other.coeffs), kravchuks(other.kravchuks), binoms(other.binoms) {}
+kravchuk_exp::kravchuk_exp(kravchuk_exp const &other) : n_qubits(other.n_qubits), coeffs(other.coeffs), binoms(other.binoms) {}
 
 // Move constructor
 kravchuk_exp::kravchuk_exp(kravchuk_exp &&other) {
     n_qubits = std::move(other.n_qubits);
     coeffs = std::move(other.coeffs);
-    kravchuks = std::move(other.kravchuks);
     binoms = std::move(other.binoms);
 }
 
 // Prints this for debugging
 void const kravchuk_exp::print() const {
-
+    std::cout << coeffs << std::endl;
 }
 
 // Returns this evaluated at (m,n,k)
 double kravchuk_exp::eval(int const &m, int const &n, int const &k) const {
+    std::vector<polynomial> const& kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
+    double res = 0;
+    for (int r = 0; r <= n_qubits; r++) {
+        for (int q = 0; q <= n_qubits; q++) {
+            for (int p = 0; p <= n_qubits; p++) {
+                res += coeffs(p, q, r) * kravchuks[p](m) * kravchuks[q](n) * kravchuks[r](k);
+            }
+        }
+    }
+    return res;
+}
+
+// Returns this evaluated at (m,n,k), taking the Kravchuk polynomials as an input to avoid costly logic
+double kravchuk_exp::eval(int const &m, int const &n, int const &k, std::vector<polynomial> const &kravchuks) const {
     double res = 0;
     for (int r = 0; r <= n_qubits; r++) {
         for (int q = 0; q <= n_qubits; q++) {
@@ -469,7 +485,8 @@ double kravchuk_exp::eval(int const &m, int const &n, int const &k) const {
 
 // Calculates this evaluated at (m,n,k), multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k)
 double kravchuk_exp::binom_eval(int const &m, int const &n, int const &k) const {
-    return binoms[m] * binoms[n] * binoms[k] * eval(m, n, k);
+    std::vector<polynomial> const& kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
+    return binoms[m] * binoms[n] * binoms[k] * eval(m, n, k, kravchuks);
 }
 
 // Multiplies all coefficients of this by scalar
@@ -560,7 +577,6 @@ Eigen::Tensor<double, 3> kravchuk_exp::as_binom_tensor() const {
 kravchuk_exp& kravchuk_exp::operator=(kravchuk_exp &&other) {
     n_qubits = std::move(other.n_qubits);
     coeffs = std::move(other.coeffs);
-    kravchuks = std::move(other.kravchuks);
     binoms = std::move(other.binoms);
     return *this;
 }

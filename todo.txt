@@ -4,4 +4,6 @@
 - Parallelize get_all_gmnk. First it would be optimal to solve the previous task
 - Debug why kravchuk_exp tend to crash when n_qubits = 5, 7, 9
 - Implement right multiplication of GF2N matrix by a vector in GF2N. Either implement the inefficient version, assume matrix is symmetric or store both the matrix and the transpose matrix 
-- Change all instances of Adj to use a specialized GF2N matrix class, with methods to add connections and to create a specific type of graph. Also, implement methods to compute important characteristics of the graph
+- Change kravchuk_exp to only compute the buffers when they are necessary, so that no memory is used whenever a kravchuk_exp is created, until evaluation forces the creation. Succesive evaluations check if computed to not compute again
+- Modify all classes to use a particular convention for member variables. Correct all functions that had conflicts with repeated names, such as n_nodes for simple_graph
+- Move graph class to general library

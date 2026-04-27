@@ -29,14 +29,8 @@ private:
 //  Builds the next Kravchuk polynomial from their recurrence relations
 polynomial get_next_Kravchuk(polynomial const &first, polynomial const &second, unsigned int const &N);
 
-// Returns all Kravchuk polynomials from rank 0 to rank max_rank, with N fixed
-std::vector<polynomial> get_Kravchuk_pols(unsigned int const &max_rank, unsigned int const &N);
-
-//  Builds the next Kravchuk polynomial from their recurrence relations
-polynomial get_next_Kravchuk(polynomial const &first, polynomial const &second, unsigned int const &N);
-
-// Returns all Kravchuk polynomials from rank 0 to rank max_rank, with N fixed
-std::vector<polynomial> get_Kravchuk_pols(unsigned int const &max_rank, unsigned int const &N);
+// Returns all Kravchuk polynomials from rank 0 to rank max_rank, with N fixed. Stores a cache of the last Kravchuk polynomials computed, so that no recomputation is needed when max_rank and N are repeated. If N changes, it recomputes the values, while if only max_rank changes, the vector is resized and computed as needed
+std::vector<polynomial> const& get_Kravchuk_pols(unsigned int const &max_rank, unsigned int const &N);
 
 // Polynomial over 3 variables
 class polynomial3{
@@ -88,7 +82,7 @@ private:
     std::unique_ptr<double[]> coeffs;
 };
 
-// 
+// Stores the Kravchuk expansion of a function on symmetric space, with useful methods to perform arithmetic with more symmetric functions and to evaluate over symmetric space. It uses an external cache of Kravchuk polynomials that can only store a particular set of Kravchuks, with n_qubits fixed. Then, for optimal results kravchuk_exp must be used with a mostly constant set of n_qubits. If parallelization is necessary, it should be executed along sets of fixed n_qubits expansions to avoid expensive recomputations
 class kravchuk_exp{
 public:
     // Build a kravchuk expansion for a symmetric function of n_qubits, with all coefficients set to zero
@@ -101,10 +95,12 @@ public:
     kravchuk_exp(kravchuk_exp const &other);
     // Move constructor
     kravchuk_exp(kravchuk_exp &&other);
-    // Prints this for debugging
+    // Prints the coefficients of this for debugging
     void const print() const;
     // Returns this evaluated at (m,n,k)
     double eval(int const &m, int const &n, int const &k) const;
+    // Returns this evaluated at (m,n,k), taking the Kravchuk polynomials as an input to avoid costly logic
+    double eval(int const &m, int const &n, int const &k, std::vector<polynomial> const& kravchuks) const;
     // Calculates this evaluated at (m,n,k), multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k)
     double binom_eval(int const &m, int const &n, int const &k) const;
     // Multiplies all coefficients of this by scalar
@@ -144,7 +140,6 @@ public:
 private:
     Eigen::Tensor<double, 3> coeffs;
     unsigned int n_qubits;
-    std::vector<polynomial> kravchuks;
     std::vector<double> binoms;
 };
 
