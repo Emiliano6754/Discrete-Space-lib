@@ -8,12 +8,12 @@
 constexpr double SQRT3 = 1.73205080756887;
 
 // Lambda that converts all negative numbers to zero
-std::function<double(double)> negatives_to_zero = [](double x) {
+inline constexpr auto negatives_to_zero = [](double x) {
     return (x < 0) ? 0.0 : x;
 };
 
 // Lambda that converts all zeros to one. Useful when dividing a symmetric function by another
-std::function<double(double)> zeros_to_one = [](double x) {
+inline constexpr auto zeros_to_one = [](double x) {
     return (x == 0) ? 1 : x;
 };
 

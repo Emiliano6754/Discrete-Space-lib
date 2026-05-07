@@ -14,6 +14,6 @@ g++ -c -I "C:\\dev\\lib\\eigen" -O3 -ffast-math -march=native -pthread -fopenmp 
 
 g++ -c -I "C:\\dev\\lib\\eigen" -O3 -ffast-math -march=native -pthread -fopenmp -std=c++23 src/kravchuk.cpp -Iinclude -o build/kravchuk.o
 
-ar rcs build/libdiscrete_space.a build/GF2N.o build/GF2N_matrix.o build/sym_space.o build/Qfunc.o build/displaced_Qfunc.o build/states.o build/kravchuk.o
+ar rcs build/libdiscrete_space.a build/discrete_math.o build/GF2N.o build/GF2N_matrix.o build/sym_space.o build/Qfunc.o build/displaced_Qfunc.o build/states.o build/kravchuk.o
 
 pause
