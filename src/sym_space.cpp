@@ -2,66 +2,15 @@
 #include<cmath>
 #include<complex>
 #include<bit>
-#include<fstream>
-#include<iostream>
-#include<filesystem>
 #include<vector>
 #include<Qfunc.h>
+#include<discrete_math.h>
 
-static constexpr double sqrt3 = 1.73205080756887;
-static constexpr std::complex<double> xi = std::complex<double>(0.5 * (sqrt3 - 1), 0.5 * (sqrt3 - 1));
-static constexpr std::complex<double> xi_conj = std::complex<double>(0.5 * (sqrt3 - 1), -0.5 * (sqrt3 - 1));
-static constexpr double xi_sum_inv = sqrt3; // (1 + abs(xi)^2)/(xi + xi_conj)
-static constexpr std::complex<double> xi_min_inv = std::complex<double>(0.0, sqrt3); // (1 + abs(xi)^2)/(xi_conj - xi)
-static constexpr double xi_norm_inv = sqrt3; // (1 + abs(xi)^2)/(1 - abs(xi)^2)
-
-static unsigned int fact(const unsigned int &n) {
-    if (n == 0) { 
-        return 1;
-    }
-    unsigned int res = n;
-    for (unsigned int j = 2; j < n; j++) {
-        res *= j;
-    }
-    return res;
-}
-
-// Returns Binom(N,k) exactly
-static unsigned int binom(const unsigned int &N, const unsigned int &k) {
-    unsigned int res = 1;
-    for (unsigned int j = N; j > N - k; j--) {
-        res *= j;
-    }
-    res /= fact(k);
-    return res;
-}
-
-// Returns a double approximation of Binom(N,k)
-static double double_binom(const unsigned int &N, const unsigned int &k) {
-    double res = 1;
-    for (int j = 1; j <= k; j++) {
-        res *= static_cast<double>(N + 1 - j) / j;
-    }
-    return res;
-}
-
-// Returns a tensor of all double approximations of Binom(N,k) from k=0 to k=N
-static std::vector<double> double_binoms(const unsigned int &N) {
-    std::vector<double> res(N+1);
-    for (unsigned int k = 0; k < N+1; k++) {
-        res[k] = double_binom(N, k);
-    }
-    return res;
-}
-
-// Returns a tensor of doubles filled with all binomials (N,k) from k=0 to k=N
-static Eigen::Tensor<double, 1> binom(const unsigned int &N) {
-    Eigen::Tensor<double, 1> res(N+1);
-    for (unsigned int k = 0; k < N+1; k++) {
-        res(k) = binom(N, k);
-    }
-    return res;
-}
+static constexpr std::complex<double> xi = std::complex<double>(0.5 * (SQRT3 - 1), 0.5 * (SQRT3 - 1));
+static constexpr std::complex<double> xi_conj = std::complex<double>(0.5 * (SQRT3 - 1), -0.5 * (SQRT3 - 1));
+static constexpr double xi_sum_inv = SQRT3; // (1 + abs(xi)^2)/(xi + xi_conj)
+static constexpr std::complex<double> xi_min_inv = std::complex<double>(0.0, SQRT3); // (1 + abs(xi)^2)/(xi_conj - xi)
+static constexpr double xi_norm_inv = SQRT3; // (1 + abs(xi)^2)/(1 - abs(xi)^2)
 
 template <typename... Ints>
 static Eigen::array<unsigned int, sizeof...(Ints)> ind_arr(Ints... index) {
@@ -80,7 +29,7 @@ Eigen::Tensor<double, 3> sym_space_mask(const unsigned int &n_qubits) {
 
 // Returns the value of R_{m,n,k}
 inline double Rmnk(const unsigned int &n_qubits, const unsigned int &m, const unsigned int &n, const unsigned int &k) {
-    return double_binom(n_qubits, m) * double_binom(m, (m+n-k)/2) * double_binom(n_qubits - m, (-m + n + k)/2);
+    return binom(n_qubits, m) * binom(m, (m+n-k)/2) * binom(n_qubits - m, (-m + n + k)/2);
 }
 
 // Returns a tensor filled with the values R_{m,n,k}
@@ -106,7 +55,7 @@ unsigned int C3(const unsigned int &n_qubits, const int &h1, const int &h2, cons
     if (w1 < 0 || w2 < 0 || w3 < 0 || w4 < 0 || N1 - w1 < 0 || N2 - w2 < 0 || N3 - w3 < 0 || N4 - w4 < 0) {
         return 0;
     }
-    return fact(n_qubits) / (fact(w1) * fact(w2) * fact(w3) * fact(w4) * fact(N1 - w1) * fact(N2 - w2) * fact(N3 - w3) * fact(N4 - w4));
+    return binom(n_qubits, h1) * binom(h1, N4) * binom(n_qubits - h1, N3) * binom(N1, w1) * binom(N2, w2) * binom(N3, w3) * binom(N4, w4);
 }
 
 // Checks that the weights h1, h2, h3 can be obtained from a relation akin to h3 = h1 + h2. Returns true if they can't
@@ -144,7 +93,7 @@ double reduced_C3(const unsigned int &n_qubits, const int &h1, const int &h2, co
         if (w1 < 0 || w1 % 4 || w2 < 0 || w2 % 4 || w3 < 0 || w3 % 4 || w4 < 0 || w4 % 4) {
             continue;
         }
-        temp = double_binom(N1, w1/4) * double_binom(N2, w2/4) * double_binom(N3, w3/4) * double_binom(N4, w4/4);
+        temp = binom(N1, w1/4) * binom(N2, w2/4) * binom(N3, w3/4) * binom(N4, w4/4);
         res += temp;
         std::cout << "Full C_3(" << h1 << ", " << h2 << ", " << h3 << ", " << h4 << ", " << h5 << ", " << h6 << ", " << h7 << ") = " << temp << std::endl;
     }
@@ -158,7 +107,7 @@ kravchuk_exp get_kravchuk_gmnk(unsigned int const &n_qubits, unsigned int const 
     if (r < std::abs(static_cast<int>(p) - static_cast<int>(q)) || r > std::min(static_cast<int>(p + q), 2*static_cast<int>(n_qubits) - static_cast<int>(p + q))) {
         return gmnk;
     }
-    std::vector<double> Nchoose = double_binoms(n_qubits);
+    std::vector<double> Nchoose = get_binoms(n_qubits);
     double norm = 1.0 / (1 << n_qubits);
     // The limits of the inner sums can be reduced, as j1 forces all possible values of j2 and j3 to stay within some bounds, with p, q, r fixed. Bug in tensor product constructor
     for (int j3 = 0; j3 <= n_qubits; j3++) {
@@ -216,7 +165,7 @@ Eigen::Tensor<double, 3> get_Sv_Pfunc(const unsigned int &n_qubits, const unsign
 Eigen::Tensor<double, 1> get_cartesian_S_Pfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size) {
     Eigen::Tensor<double, 1> P(n_qubits + 1);
     for (int m = 0; m < P.dimension(0); m++) {
-        P(m) = sqrt3 * (static_cast<double>(n_qubits) - 2 * m) / qubitstate_size;
+        P(m) = SQRT3 * (static_cast<double>(n_qubits) - 2 * m) / qubitstate_size;
     }
     return P;
 }
@@ -235,7 +184,7 @@ Eigen::Tensor<double, 3> get_Sx_Pfunc(const unsigned int &n_qubits, const unsign
     Eigen::Tensor<double, 3> P(n_qubits + 1, n_qubits + 1, n_qubits + 1);
     P.setZero();
     sym_space_loop(n_qubits, [&](int &m, int &n, int &k) {
-        P(m, n, k) = sqrt3 * (static_cast<double>(n_qubits) - 2.0 * m) / qubitstate_size;
+        P(m, n, k) = SQRT3 * (static_cast<double>(n_qubits) - 2.0 * m) / qubitstate_size;
     });
     return P;
 }
@@ -245,7 +194,7 @@ Eigen::Tensor<double, 3> get_Sy_Pfunc(const unsigned int &n_qubits, const unsign
     Eigen::Tensor<double, 3> P(n_qubits + 1, n_qubits + 1, n_qubits + 1);
     P.setZero();
     sym_space_loop(n_qubits, [&](int &m, int &n, int &k) {
-        P(m, n, k) = sqrt3 * (static_cast<double>(n_qubits) - 2.0 * k) / qubitstate_size;
+        P(m, n, k) = SQRT3 * (static_cast<double>(n_qubits) - 2.0 * k) / qubitstate_size;
     });
     return P;
 }
@@ -255,7 +204,7 @@ Eigen::Tensor<double, 3> get_Sz_Pfunc(const unsigned int &n_qubits, const unsign
     Eigen::Tensor<double, 3> P(n_qubits + 1, n_qubits + 1, n_qubits + 1);
     P.setZero();
     sym_space_loop(n_qubits, [&](int &m, int &n, int &k) {
-        P(m, n, k) = sqrt3 * (static_cast<double>(n_qubits) - 2.0 * n) / qubitstate_size;
+        P(m, n, k) = SQRT3 * (static_cast<double>(n_qubits) - 2.0 * n) / qubitstate_size;
     });
     return P;
 }
@@ -377,9 +326,9 @@ Eigen::Matrix3d get_correlation_matrix(const unsigned int &n_qubits, const unsig
     };
 
     Eigen::Matrix3d Lambda {
-        {2.0 * n_qubits, sqrt3 * Sz, sqrt3 * Sy},
-        {sqrt3 * Sz, 2.0 * n_qubits, sqrt3 * Sx},
-        {sqrt3 * Sy, sqrt3 * Sx, 2.0 * n_qubits}
+        {2.0 * n_qubits, SQRT3 * Sz, SQRT3 * Sy},
+        {SQRT3 * Sz, 2.0 * n_qubits, SQRT3 * Sx},
+        {SQRT3 * Sy, SQRT3 * Sx, 2.0 * n_qubits}
     };
     return (Gamma + Lambda) / (6.0 * n_qubits);
 }
@@ -391,7 +340,7 @@ Eigen::Tensor<double, 3> get_Gfunc(const unsigned int &n_qubits, const unsigned 
     double Sx, Sy, Sz;
     Eigen::Matrix3d correlation_matrix = get_correlation_matrix(n_qubits, qubitstate_size, symQ, Sx, Sy, Sz);
     Eigen::Matrix3d precision_matrix = correlation_matrix.inverse();
-    Eigen::Vector3d x_bar = {0.5 - Sx/(2 * sqrt3 * n_qubits), 0.5 - Sy/(2 * sqrt3 * n_qubits), 0.5 - Sz/(2 * sqrt3 * n_qubits)};
+    Eigen::Vector3d x_bar = {0.5 - Sx/(2 * SQRT3 * n_qubits), 0.5 - Sy/(2 * SQRT3 * n_qubits), 0.5 - Sz/(2 * SQRT3 * n_qubits)};
     Eigen::Vector3d x;
     double coeff = (1 << (n_qubits + 1)) / ( EIGEN_PI * n_qubits * std::sqrt( EIGEN_PI * n_qubits * correlation_matrix.determinant() ) );
     sym_space_loop(n_qubits, [&](int &m, int &n, int &k) {
@@ -412,9 +361,9 @@ Eigen::Matrix3d get_correlation_matrix(const unsigned int &n_qubits, const unsig
     };
 
     Eigen::Matrix3d Lambda {
-        {2.0 * n_qubits, sqrt3 * Sz, sqrt3 * Sy},
-        {sqrt3 * Sz, 2.0 * n_qubits, sqrt3 * Sx},
-        {sqrt3 * Sy, sqrt3 * Sx, 2.0 * n_qubits}
+        {2.0 * n_qubits, SQRT3 * Sz, SQRT3 * Sy},
+        {SQRT3 * Sz, 2.0 * n_qubits, SQRT3 * Sx},
+        {SQRT3 * Sy, SQRT3 * Sx, 2.0 * n_qubits}
     };
     return (Gamma + Lambda) / (6.0 * n_qubits);
 }
@@ -425,7 +374,7 @@ void get_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size
     double Sx, Sy, Sz;
     Eigen::Matrix3d correlation_matrix = get_correlation_matrix(n_qubits, qubitstate_size, symQ, Sx, Sy, Sz);
     Eigen::Matrix3d precision_matrix = correlation_matrix.inverse();
-    Eigen::Vector3d x_bar = {0.5 - Sx/(2 * sqrt3 * n_qubits), 0.5 - Sy/(2 * sqrt3 * n_qubits), 0.5 - Sz/(2 * sqrt3 * n_qubits)};
+    Eigen::Vector3d x_bar = {0.5 - Sx/(2 * SQRT3 * n_qubits), 0.5 - Sy/(2 * SQRT3 * n_qubits), 0.5 - Sz/(2 * SQRT3 * n_qubits)};
     Eigen::Vector3d x;
     double coeff = (1 << (n_qubits + 1)) / ( EIGEN_PI * n_qubits * std::sqrt( EIGEN_PI * n_qubits * correlation_matrix.determinant() ) );
     sym_space_loop(n_qubits, [&](int &m, int &n, int &k) {
@@ -461,25 +410,13 @@ Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned i
     return get_symQ(n_qubits, qubitstate_size, Qfunc);
 }
 
-// Saves the symQfunc in filename using a csv format
-void save_symQfunc(const Eigen::Tensor<double,3> &symQfunc, const std::string &filename) {
-    const std::filesystem::path cwd = std::filesystem::current_path();
-    std::ofstream output_file(cwd.string()+"/data/symQfuncs/"+filename,std::ofstream::out|std::ofstream::ate|std::ofstream::trunc);
-    if (output_file.is_open()) {
-        Eigen::TensorIOFormat csv_format = Eigen::TensorIOFormat(/*separator=*/{",\n", ""}, /*prefix=*/{"", ""}, /*suffix=*/{"", ""}, /*precision=*/Eigen::FullPrecision, /*flags=*/0, /*tenPrefix=*/"", /*tenSuffix=*/"");
-        output_file << symQfunc.format(csv_format);
-    } else {
-        std::cout << "Could not save symQfunc" << std::endl;
-    }
-}
-
 // Returns the Kravchuck expansion and the Gaussian envelope of the state SymQ. Needs checking, the determinant of correlation_matrix may sometimes be negative, which leads to the sqrt to be undefined.
 void get_Kravchuk_expansion_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ, Eigen::Tensor<double, 3> &Gfunc, Eigen::Tensor<double, 3> &Kravchuk_exp) {
     Gfunc.setZero();
     double Sx, Sy, Sz, Sx2, Sy2, Sz2, SySz, SzSx, SxSy;
     Eigen::Matrix3d correlation_matrix = get_correlation_matrix(n_qubits, qubitstate_size, symQ, Sx, Sy, Sz, Sx2, Sy2, Sz2, SySz, SzSx, SxSy);
     Eigen::Matrix3d precision_matrix = correlation_matrix.inverse();
-    Eigen::Vector3d x_bar = {0.5 - Sx/(2 * sqrt3 * n_qubits), 0.5 - Sy/(2 * sqrt3 * n_qubits), 0.5 - Sz/(2 * sqrt3 * n_qubits)};
+    Eigen::Vector3d x_bar = {0.5 - Sx/(2 * SQRT3 * n_qubits), 0.5 - Sy/(2 * SQRT3 * n_qubits), 0.5 - Sz/(2 * SQRT3 * n_qubits)};
     Eigen::Vector3d x;
     double coeff = (1 << (n_qubits + 1)) / ( EIGEN_PI * n_qubits * std::sqrt( EIGEN_PI * n_qubits * correlation_matrix.determinant() ) );
     sym_space_loop(n_qubits, [&](int &m, int &n, int &k) {
@@ -487,9 +424,10 @@ void get_Kravchuk_expansion_Gfunc(const unsigned int &n_qubits, const unsigned i
         Gfunc(m, n, k) = coeff * std::exp(- static_cast<double>(n_qubits) * (x - x_bar).transpose() * precision_matrix * (x - x_bar) );
     });
     Eigen::Tensor<double, 3> Nm, Nn, Nk, K1m, K1n, K1k, m, n, k;
-    const Eigen::Tensor<double, 1> binomial = binom(n_qubits);
+    std::vector<double> vec_binomials = get_binoms(n_qubits);
+    Eigen::TensorMap<Eigen::Tensor<double, 1>> binomial(vec_binomials.data(), n_qubits + 1);
     Eigen::VectorXd seq = Eigen::VectorXd::EqualSpaced(n_qubits+1, 0, 1);
-    Eigen::TensorMap<Eigen::Tensor<double, 1>> seq_tensor(seq.data(), n_qubits+1);
+    Eigen::TensorMap<Eigen::Tensor<double, 1>> seq_tensor(seq.data(), n_qubits + 1);
     Eigen::array<Eigen::Index, 3> new_shape = {n_qubits+1, 1, 1};
     Eigen::array<Eigen::Index, 3> bcast = {1, n_qubits+1, n_qubits+1};
     Nm = binomial.reshape(new_shape).broadcast(bcast);
@@ -505,6 +443,6 @@ void get_Kravchuk_expansion_Gfunc(const unsigned int &n_qubits, const unsigned i
     K1m = - (2.0/n_qubits) * m + static_cast<double>(1);
     K1n = - (2.0/n_qubits) * n + static_cast<double>(1);
     K1k = - (2.0/n_qubits) * k + static_cast<double>(1);
-    Kravchuk_exp = Nm * Nn * Nk * ( (Sx/sqrt3) * K1m + (Sz/sqrt3) * K1n * n) + (Sy/sqrt3) * K1k + (1.0 / (3 * n_qubits *(n_qubits - 1))) * ( (Sx2 - n_qubits)*(2*m*m - 2*n_qubits*m + static_cast<double>(n_qubits*(n_qubits-1)/2)) + (Sz2 - n_qubits)*(2*n*n - 2*n_qubits*n + static_cast<double>(n_qubits*(n_qubits-1)/2)) + (Sy2 - n_qubits)*(2*k*k - 2*n_qubits*k + static_cast<double>(n_qubits*(n_qubits-1)/2)) ) + (1.0/6)*( (SySz + 2*sqrt3*Sx)*K1n*K1k + (SxSy + 2*sqrt3*Sz)*K1m*K1k + (SzSx + 2*sqrt3*Sy)*K1m*K1n + static_cast<double>(1));
+    Kravchuk_exp = Nm * Nn * Nk * ( (Sx/SQRT3) * K1m + (Sz/SQRT3) * K1n * n) + (Sy/SQRT3) * K1k + (1.0 / (3 * n_qubits *(n_qubits - 1))) * ( (Sx2 - n_qubits)*(2*m*m - 2*n_qubits*m + static_cast<double>(n_qubits*(n_qubits-1)/2)) + (Sz2 - n_qubits)*(2*n*n - 2*n_qubits*n + static_cast<double>(n_qubits*(n_qubits-1)/2)) + (Sy2 - n_qubits)*(2*k*k - 2*n_qubits*k + static_cast<double>(n_qubits*(n_qubits-1)/2)) ) + (1.0/6)*( (SySz + 2*SQRT3*Sx)*K1n*K1k + (SxSy + 2*SQRT3*Sz)*K1m*K1k + (SzSx + 2*SQRT3*Sy)*K1m*K1n + static_cast<double>(1));
     Kravchuk_exp *= sym_space_mask(n_qubits);
 }

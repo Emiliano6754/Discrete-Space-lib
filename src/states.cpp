@@ -2,15 +2,7 @@
 #include<bit>
 #include<complex>
 #include<unsupported/Eigen/KroneckerProduct>
-
-// Calculates binom(n_qubits, k)
-double binom_coeff(const unsigned int &n_qubits, const unsigned int &k) {
-    double binom = 1;
-    for (int j = 0; j < k; j++) {
-        binom *= static_cast<double>(n_qubits - j) / (k - j);
-    }
-    return binom;
-}
+#include<discrete_math.h>
 
 // Returns the normalized state K(|N/2, N> + F|N/2, N>) where N = n_qubits. Requires n_qubits to be even.
 Eigen::VectorXd Dicke_superposition(const unsigned int &n_qubits, const unsigned int &qubitstate_size) {
@@ -32,7 +24,7 @@ Eigen::VectorXd Dicke_superposition(const unsigned int &n_qubits, const unsigned
 // Returns the normalized Dicke state |k, n_qubits>.
 Eigen::VectorXd Dicke_state(const unsigned int &n_qubits, const unsigned int &k, const unsigned int &qubitstate_size) {
     Eigen::VectorXd state(qubitstate_size);
-    const double norm = 1.0 / std::sqrt(binom_coeff(n_qubits, k));
+    const double norm = 1.0 / std::sqrt(binom(n_qubits, k));
     for (unsigned int eta = 0; eta < qubitstate_size; eta++) {
         state(eta) = (std::popcount(eta) == k);
     }

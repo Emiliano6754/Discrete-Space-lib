@@ -1,25 +1,8 @@
 #include "kravchuk.h"
 #include<iostream>
-#include<sym_space.h>
 #include<limits>
-
-// Returns a double approximation of Binom(N,k)
-static double binom(const unsigned int &N, const unsigned int &k) {
-    double res = 1;
-    for (int j = 1; j <= k; j++) {
-        res *= static_cast<double>(N + 1 - j) / j;
-    }
-    return res;
-}
-
-// Returns a tensor of doubles filled with all approximations of binomials (N,k) from k=0 to k=N
-static std::vector<double> binom(const unsigned int &N) {
-    std::vector<double> res(N+1);
-    for (unsigned int k = 0; k < N+1; k++) {
-        res[k] = binom(N, k);
-    }
-    return res;
-}
+#include<sym_space.h>
+#include<discrete_math.h>
 
 // Builds a polynomial based on its coefficients
 polynomial::polynomial(unsigned int const &rank, std::unique_ptr<double[]> const &in_coeffs): n_rank(rank), coeffs(std::make_unique<double[]>(rank+1)) {
@@ -96,12 +79,13 @@ std::unique_ptr<double[]> get_next_Kravchuk(std::unique_ptr<double[]> const &fir
     return coeffs;
 }
 
-// Returns all Kravchuk polynomials from rank 0 to rank max_rank, with N fixed. Returns at least 2 for optimization
+// Returns all Kravchuk polynomials from rank 0 to rank max_rank, with N fixed. Stores a cache of the last Kravchuk polynomials computed, so that no recomputation is needed when max_rank and N are repeated. If N changes, it recomputes the values, while if only max_rank changes, the vector is enlarged and computed as needed
 std::vector<polynomial> const& get_Kravchuk_pols(unsigned int const &max_rank, unsigned int const &N) {
     static unsigned int current_rank = 0, current_N = 0;
     static std::vector<polynomial> pols;
 
     if (N != current_N) {
+        current_N = N;
         pols.clear();
         pols.reserve(max_rank + 1);
         std::unique_ptr<double[]> first = std::make_unique<double[]>(max_rank);
@@ -117,10 +101,12 @@ std::vector<polynomial> const& get_Kravchuk_pols(unsigned int const &max_rank, u
         pols.emplace_back(1, second);
         current_rank = 2;
     }
-    while (max_rank > current_rank) {
+    if (max_rank != current_rank) {
         pols.reserve(max_rank + 1);
-        pols.emplace_back(pols[current_rank - 2], pols[current_rank - 1], N);
-        current_rank++;
+        while (max_rank > current_rank) {
+            pols.emplace_back(pols[current_rank - 2], pols[current_rank - 1], N);
+            current_rank++;
+        }
     }
     return pols;
 }
@@ -194,7 +180,7 @@ double polynomial3::eval(int const &m, int const &n, int const &k) const {
 
 // Calculates this polynomial multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k). This uses double definitions of Binom(N, m), so that it is not exact. Saves a buffer of binomials for optimization, so that multiple executions of binom_eval with different N are incorrect
 double polynomial3::binom_eval(unsigned int const &N, int const &m, int const &n, int const &k) const {
-    static std::vector<double> binoms = binom(N);
+    std::vector<double> const& binoms = cached_binoms(N);
     return binoms[m] * binoms[n] * binoms[k] * eval(m, n, k);
 }
 
@@ -427,28 +413,14 @@ polynomial3 polynomial3::operator+(polynomial3 const &other) {
 // Build a kravchuk expansion for a symmetric function of n_qubits, with all coefficients set to zero
 kravchuk_exp::kravchuk_exp(unsigned int const &n_qubits) : n_qubits(n_qubits) {
     coeffs = Eigen::Tensor<double, 3>(n_qubits + 1, n_qubits + 1, n_qubits + 1).setZero();
-    binoms = binom(n_qubits);
 }
 
 // Builds a kravchuk expansion for a symmetric function of n_qubits. Copies in_coeffs as coefficients
-kravchuk_exp::kravchuk_exp(unsigned int const &n_qubits, Eigen::Tensor<double, 3> &in_coeffs) : n_qubits(n_qubits), coeffs(in_coeffs) {
-    binoms = binom(n_qubits);
-}
+kravchuk_exp::kravchuk_exp(unsigned int const &n_qubits, Eigen::Tensor<double, 3> &in_coeffs) : n_qubits(n_qubits), coeffs(in_coeffs) {}
 
 // Builds a kravchuk expansion for a symmetric function of n_qubits, from an rvalue tensor as coefficients
 kravchuk_exp::kravchuk_exp(unsigned int const &n_qubits, Eigen::Tensor<double, 3> &&in_coeffs) : n_qubits(n_qubits) {
     coeffs = std::move(in_coeffs);
-    binoms = binom(n_qubits);
-}
-
-// Copy constructor
-kravchuk_exp::kravchuk_exp(kravchuk_exp const &other) : n_qubits(other.n_qubits), coeffs(other.coeffs), binoms(other.binoms) {}
-
-// Move constructor
-kravchuk_exp::kravchuk_exp(kravchuk_exp &&other) {
-    n_qubits = std::move(other.n_qubits);
-    coeffs = std::move(other.coeffs);
-    binoms = std::move(other.binoms);
 }
 
 // Prints this for debugging
@@ -486,6 +458,7 @@ double kravchuk_exp::eval(int const &m, int const &n, int const &k, std::vector<
 // Calculates this evaluated at (m,n,k), multiplied by Binom(N, m) * Binom(N, n) * Binom(N, k)
 double kravchuk_exp::binom_eval(int const &m, int const &n, int const &k) const {
     std::vector<polynomial> const& kravchuks = get_Kravchuk_pols(n_qubits, n_qubits);
+    std::vector<double> const& binoms = cached_binoms(n_qubits);
     return binoms[m] * binoms[n] * binoms[k] * eval(m, n, k, kravchuks);
 }
 
@@ -553,6 +526,11 @@ kravchuk_exp&& kravchuk_exp::set_coeffs(Eigen::Tensor<double, 3> &&in_coeffs) &&
     return std::move(*this);
 }
 
+// Returns a const reference to the coefficients of the expansion
+Eigen::Tensor<double, 3> const& kravchuk_exp::get_coeffs() const {
+    return coeffs;
+}
+
 // Returns this expansion as a tensor, evaluated over all symmetric space
 Eigen::Tensor<double, 3> kravchuk_exp::as_tensor() const {
     Eigen::Tensor<double, 3> tensor(n_qubits + 1, n_qubits + 1, n_qubits + 1);
@@ -577,7 +555,6 @@ Eigen::Tensor<double, 3> kravchuk_exp::as_binom_tensor() const {
 kravchuk_exp& kravchuk_exp::operator=(kravchuk_exp &&other) {
     n_qubits = std::move(other.n_qubits);
     coeffs = std::move(other.coeffs);
-    binoms = std::move(other.binoms);
     return *this;
 }
 

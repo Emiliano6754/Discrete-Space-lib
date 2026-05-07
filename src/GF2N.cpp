@@ -6,6 +6,7 @@
 // #include<iostream>
 #include<bitset> // Easy binary printing for debugging
 #include<algorithm> // Reverse raw pointer array
+#include<discrete_math.h>
 
 // Returns the number on the (N-2)th row of polynomial filename. Can be used to parse the full, reduced and reducing polynomials. Can read polynomials of up to 64 qubits
 __m128i read_polynomial(const std::string &polynomial_filename, const unsigned int &N) {

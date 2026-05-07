@@ -82,7 +82,7 @@ private:
     std::unique_ptr<double[]> coeffs;
 };
 
-// Stores the Kravchuk expansion of a function on symmetric space, with useful methods to perform arithmetic with more symmetric functions and to evaluate over symmetric space. It uses an external cache of Kravchuk polynomials that can only store a particular set of Kravchuks, with n_qubits fixed. Then, for optimal results kravchuk_exp must be used with a mostly constant set of n_qubits. If parallelization is necessary, it should be executed along sets of fixed n_qubits expansions to avoid expensive recomputations
+// Stores the Kravchuk expansion of a function on symmetric space, with useful methods to perform arithmetic with more symmetric functions and to evaluate over symmetric space. It uses an external cache of Kravchuk polynomials and binomials that can only store a particular set, with n_qubits fixed. Then, for optimal results kravchuk_exp must be used with a mostly constant set of n_qubits. If parallelization is necessary, it should be executed along sets of fixed n_qubits expansions to avoid expensive recomputations
 class kravchuk_exp{
 public:
     // Build a kravchuk expansion for a symmetric function of n_qubits, with all coefficients set to zero
@@ -92,9 +92,9 @@ public:
     // Builds a kravchuk expansion for a symmetric function of n_qubits, from an rvalue tensor as coefficients
     kravchuk_exp(unsigned int const &n_qubits, Eigen::Tensor<double, 3> &&in_coeffs);
     // Copy constructor
-    kravchuk_exp(kravchuk_exp const &other);
+    kravchuk_exp(kravchuk_exp const &other) = default;
     // Move constructor
-    kravchuk_exp(kravchuk_exp &&other);
+    kravchuk_exp(kravchuk_exp &&other) = default;
     // Prints the coefficients of this for debugging
     void const print() const;
     // Returns this evaluated at (m,n,k)
@@ -123,6 +123,8 @@ public:
     kravchuk_exp&& set_coeffs(Eigen::Tensor<double, 3> &in_coeffs) &&;
     // Moves in_coeffs to this.coeffs
     kravchuk_exp&& set_coeffs(Eigen::Tensor<double, 3> &&in_coeffs) &&;
+    // Returns a const reference to the coefficients of the expansion
+    Eigen::Tensor<double, 3> const& get_coeffs() const;
     // Returns this expansion as a tensor, evaluated over all symmetric space
     Eigen::Tensor<double, 3> as_tensor() const;
     // Returns this expansion as a tensor, evaluated over all symmetric space with leading binomials Binom(N, m) * Binom(N, n) * Binom(N, k)
@@ -140,7 +142,6 @@ public:
 private:
     Eigen::Tensor<double, 3> coeffs;
     unsigned int n_qubits;
-    std::vector<double> binoms;
 };
 
 #endif

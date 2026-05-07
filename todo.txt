@@ -7,3 +7,9 @@
 - Change kravchuk_exp to only compute the buffers when they are necessary, so that no memory is used whenever a kravchuk_exp is created, until evaluation forces the creation. Succesive evaluations check if computed to not compute again
 - Modify all classes to use a particular convention for member variables. Correct all functions that had conflicts with repeated names, such as n_nodes for simple_graph
 - Move graph class to general library
+- Use CMake
+- Refactor all classes that store arrays as std::unique_ptr, as they are points of failure and have close to no benefits
+- Allow GF2N_matrix to be resized, then implement copy assignment operators for simple_graph
+- Optimize Qfunc with the new formulas and remove the stack buffers in favor of cached buffers
+- Implement looping over all displaced symQ with the optimized displaced symQ formula?
+- Implement looping over graph_states with a certain number of random graphs

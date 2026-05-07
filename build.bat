@@ -1,4 +1,6 @@
-g++ -c -O3 -ffast-math -march=native -pthread -fopenmp -std=c++23 -mavx2 src/GF2N.cpp -Iinclude -o build/GF2N.o
+g++ -c -I "C:\\dev\\lib\\eigen" -O3 -ffast-math -march=native -pthread -fopenmp -std=c++23 src/discrete_math.cpp -Iinclude -o build/discrete_math.o
+
+g++ -c -I "C:\\dev\\lib\\eigen" -O3 -ffast-math -march=native -pthread -fopenmp -std=c++23 -mavx2 src/GF2N.cpp -Iinclude -o build/GF2N.o
 
 g++ -c -I "C:\\dev\\lib\\eigen" -O3 -ffast-math -march=native -pthread -fopenmp -std=c++23 src/GF2N_matrix.cpp -Iinclude -o build/GF2N_matrix.o
 

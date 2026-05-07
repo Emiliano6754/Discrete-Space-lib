@@ -2,7 +2,8 @@
 #include<iostream>
 #include<bitset>
 #include<bit>
-#include "GF2N.h"
+#include<GF2N.h>
+#include<discrete_math.h>
 
 // Builds a GF2N matrix A, with size entries where the k-th bit (from right) of the j-th entry corresponds to A_jk. Sets all rows to the rightmost n(=columns)-bits of def
 GF2N_matrix::GF2N_matrix(unsigned int const &rows, unsigned int const &columns, unsigned int const &def) : rows_n(rows), columns_n(columns), matrix_rows(std::make_unique<unsigned int[]>(rows_n)) {

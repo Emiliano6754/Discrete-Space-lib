@@ -1,6 +1,9 @@
 #ifndef SYM_SPACE_H
 #define SYM_SPACE_H
 
+#include<fstream>
+#include<iostream>
+#include<filesystem>
 #include<Eigen/Dense>
 #include<unsupported/Eigen/CXX11/Tensor>
 #include<kravchuk.h>
@@ -137,8 +140,24 @@ Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned i
 // Returns the symmetrized Q function for a given state (specified by its operational basis expansion)
 Eigen::Tensor<double, 3> get_symQ(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::VectorXcd &state);
 
-// Saves the symQfunc in filename using a csv format
-void save_symQfunc(const Eigen::Tensor<double,3> &symQfunc, const std::string &filename);
+
+// Saves a symmetric function in data/file_path_name using a csv format
+template<typename T>
+void save_sym_func(const Eigen::Tensor<T,3> &sym_func, const std::string &file_path_name) {
+    const std::filesystem::path cwd = std::filesystem::current_path();
+    std::ofstream output_file(cwd.string()+"/data/"+file_path_name,std::ofstream::out|std::ofstream::ate|std::ofstream::trunc);
+    if (output_file.is_open()) {
+        Eigen::TensorIOFormat csv_format = Eigen::TensorIOFormat(/*separator=*/{",\n", ""}, /*prefix=*/{"", ""}, /*suffix=*/{"", ""}, /*precision=*/Eigen::FullPrecision, /*flags=*/0, /*tenPrefix=*/"", /*tenSuffix=*/"");
+        output_file << sym_func.format(csv_format);
+    } else {
+        std::cout << "Could not save symmetric function in /data/" << file_path_name << std::endl;
+    }
+}
+
+// Saves the symQfunc in data/symQfuncs/filename using a csv format
+inline void save_symQfunc(const Eigen::Tensor<double,3> &symQfunc, const std::string &filename) {
+    save_sym_func(symQfunc, "symQfuncs/" + filename);
+}
 
 void get_Kravchuk_expansion_Gfunc(const unsigned int &n_qubits, const unsigned int &qubitstate_size, const Eigen::Tensor<double, 3> &symQ, Eigen::Tensor<double, 3> &Gfunc, Eigen::Tensor<double, 3> &Kravchuk_exp);
 
