@@ -8,7 +8,7 @@
 class polynomial{
 public:
     // Builds a polynomial based on its coefficients
-    polynomial(unsigned int const &rank, std::unique_ptr<double[]> const &in_coeffs);
+    polynomial(unsigned int const &rank, std::vector<double> const &in_coeffs);
     // Copy constructor
     polynomial(polynomial const &other);
     //  Builds the next Kravchuk polynomial from Kravchuk recurrence relations
@@ -22,8 +22,8 @@ public:
     // Returns this evaluated at x
     double operator()(int const &x) const;
 private:
-    unsigned int const n_rank;
-    std::unique_ptr<double[]> coeffs;
+    unsigned int n_rank;
+    std::vector<double> coeffs;
 };
 
 //  Builds the next Kravchuk polynomial from their recurrence relations

@@ -5,18 +5,20 @@
 #include<discrete_math.h>
 
 // Builds a polynomial based on its coefficients
-polynomial::polynomial(unsigned int const &rank, std::unique_ptr<double[]> const &in_coeffs): n_rank(rank), coeffs(std::make_unique<double[]>(rank+1)) {
+polynomial::polynomial(unsigned int const &rank, std::vector<double> const &in_coeffs): n_rank(rank), coeffs(rank+1) {
     for (int j = 0; j <= rank; j++) {
         coeffs[j] = in_coeffs[j];
     }
 }
 
 // Copy constructor
-polynomial::polynomial(polynomial const &other): n_rank(other.n_rank), coeffs(std::make_unique<double[]>(other.n_rank + 1)) {
-    std::copy(other.coeffs.get(), other.coeffs.get() + (n_rank + 1), coeffs.get());
+polynomial::polynomial(polynomial const &other): n_rank(other.n_rank), coeffs(other.n_rank+1) {
+    for (int j = 0; j < n_rank; j++) {
+        coeffs[j] = other.coeffs[j];
+    }
 }
 
-polynomial::polynomial(polynomial const &first, polynomial const &second, int const &N): n_rank(second.rank() + 1), coeffs(std::make_unique<double[]>(n_rank + 1)) {
+polynomial::polynomial(polynomial const &first, polynomial const &second, int const &N): n_rank(second.rank() + 1), coeffs(second.rank() + 2) {
     coeffs[0] = (N * second[0] - (N - static_cast<int>(n_rank) + 2) * first[0]) / static_cast<double>(n_rank);
     for (int j = 1; j <= first.rank(); j++) {
         coeffs[j] = (N * second[j] - 2 * second[j-1] - (N - static_cast<int>(n_rank) + 2) * first[j]) / static_cast<double>(n_rank);
@@ -57,25 +59,25 @@ double polynomial::operator()(int const &x) const {
 //  Builds the next Kravchuk polynomial from their recurrence relations
 polynomial get_next_Kravchuk(polynomial const &first, polynomial const &second, unsigned int const &N) {
     const int next_rank = second.rank() + 1;
-    std::unique_ptr<double[]> coeffs = std::make_unique<double[]>(next_rank);
-    coeffs[0] = (N * second[0] - (N - next_rank + 2) * first[0]) / next_rank;
+    std::vector<double> coeffs(next_rank + 1);
+    coeffs[0] = (N * second[0] - (N - next_rank + 2) * first[0]) / static_cast<double>(next_rank);
     for (int j = 1; j <= first.rank(); j++) {
-        coeffs[j] = (N * second[j] - 2 * second[j-1] - (N - next_rank + 2) * first[j]) / next_rank;
+        coeffs[j] = (N * second[j] - 2 * second[j-1] - (N - next_rank + 2) * first[j]) / static_cast<double>(next_rank);
     }
-    coeffs[second.rank()] = (N * second[second.rank()] - 2 * second[second.rank() - 1]) / next_rank;
-    coeffs[next_rank] = - 2 * second[second.rank()] / next_rank;
+    coeffs[second.rank()] = (N * second[second.rank()] - 2 * second[second.rank() - 1]) / static_cast<double>(next_rank);
+    coeffs[next_rank] = - 2 * second[second.rank()] / static_cast<double>(next_rank);
     return polynomial(next_rank, coeffs);
 }
 
 //  Builds the next Kravchuk polynomial from their recurrence relations. Coefficients only
-std::unique_ptr<double[]> get_next_Kravchuk(std::unique_ptr<double[]> const &first, std::unique_ptr<double[]> const &second, unsigned int const &next_rank, unsigned int const &N) {
-    std::unique_ptr<double[]> coeffs = std::make_unique<double[]>(next_rank);
-    coeffs[0] = (N * second[0] - (N - next_rank + 2) * first[0]) / next_rank;
+std::vector<double> get_next_Kravchuk(std::vector<double> const &first, std::vector<double> const &second, unsigned int const &next_rank, unsigned int const &N) {
+    std::vector<double> coeffs(next_rank);
+    coeffs[0] = (N * second[0] - (N - next_rank + 2) * first[0]) / static_cast<double>(next_rank);
     for (int j = 1; j <= next_rank-2; j++) {
-        coeffs[j] = (N * second[j] - 2 * second[j-1] - (N - next_rank + 2) * first[j]) / next_rank;
+        coeffs[j] = (N * second[j] - 2 * second[j-1] - (N - next_rank + 2) * first[j]) / static_cast<double>(next_rank);
     }
-    coeffs[next_rank-1] = (N * second[next_rank-1] - 2 * second[next_rank-2]) / next_rank;
-    coeffs[next_rank] = - 2 * second[next_rank-1] / next_rank;
+    coeffs[next_rank-1] = (N * second[next_rank-1] - 2 * second[next_rank-2]) / static_cast<double>(next_rank);
+    coeffs[next_rank] = - 2 * second[next_rank-1] / static_cast<double>(next_rank);
     return coeffs;
 }
 
@@ -88,8 +90,8 @@ std::vector<polynomial> const& get_Kravchuk_pols(unsigned int const &max_rank, u
         current_N = N;
         pols.clear();
         pols.reserve(max_rank + 1);
-        std::unique_ptr<double[]> first = std::make_unique<double[]>(max_rank);
-        std::unique_ptr<double[]> second = std::make_unique<double[]>(max_rank);
+        std::vector<double> first(max_rank + 1);
+        std::vector<double> second(max_rank + 1);
         // Set all values to 0 first to avoid any possible issues
         for (int j = 0; j <= max_rank; j++) {
             first[j] = second[j] = 0;
@@ -99,12 +101,12 @@ std::vector<polynomial> const& get_Kravchuk_pols(unsigned int const &max_rank, u
         second[1] = -2;
         pols.emplace_back(0, first);
         pols.emplace_back(1, second);
-        current_rank = 2;
+        current_rank = 1;
     }
     if (max_rank != current_rank) {
         pols.reserve(max_rank + 1);
         while (max_rank > current_rank) {
-            pols.emplace_back(pols[current_rank - 2], pols[current_rank - 1], N);
+            pols.emplace_back(pols[current_rank - 1], pols[current_rank], N);
             current_rank++;
         }
     }
@@ -445,9 +447,9 @@ double kravchuk_exp::eval(int const &m, int const &n, int const &k) const {
 // Returns this evaluated at (m,n,k), taking the Kravchuk polynomials as an input to avoid costly logic
 double kravchuk_exp::eval(int const &m, int const &n, int const &k, std::vector<polynomial> const &kravchuks) const {
     double res = 0;
-    for (int r = 0; r <= n_qubits; r++) {
+    for (int p = 0; p <= n_qubits; p++) {
         for (int q = 0; q <= n_qubits; q++) {
-            for (int p = 0; p <= n_qubits; p++) {
+            for (int r = 0; r <= n_qubits; r++) {
                 res += coeffs(p, q, r) * kravchuks[p](m) * kravchuks[q](n) * kravchuks[r](k);
             }
         }

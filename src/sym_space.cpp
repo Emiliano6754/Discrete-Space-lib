@@ -95,7 +95,6 @@ double reduced_C3(const unsigned int &n_qubits, const int &h1, const int &h2, co
         }
         temp = binom(N1, w1/4) * binom(N2, w2/4) * binom(N3, w3/4) * binom(N4, w4/4);
         res += temp;
-        std::cout << "Full C_3(" << h1 << ", " << h2 << ", " << h3 << ", " << h4 << ", " << h5 << ", " << h6 << ", " << h7 << ") = " << temp << std::endl;
     }
     return res;
 }

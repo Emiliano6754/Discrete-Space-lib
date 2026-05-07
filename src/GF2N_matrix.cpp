@@ -6,7 +6,7 @@
 #include<discrete_math.h>
 
 // Builds a GF2N matrix A, with size entries where the k-th bit (from right) of the j-th entry corresponds to A_jk. Sets all rows to the rightmost n(=columns)-bits of def
-GF2N_matrix::GF2N_matrix(unsigned int const &rows, unsigned int const &columns, unsigned int const &def) : rows_n(rows), columns_n(columns), matrix_rows(std::make_unique<unsigned int[]>(rows_n)) {
+GF2N_matrix::GF2N_matrix(unsigned int const &rows, unsigned int const &columns, unsigned int const &def) : rows_n(rows), columns_n(columns), matrix_rows(rows) {
     unsigned int mask = (1 << columns_n) - 1;
     for (int j = 0; j < rows_n; j++) {
         matrix_rows[j] = def & mask;
@@ -14,7 +14,7 @@ GF2N_matrix::GF2N_matrix(unsigned int const &rows, unsigned int const &columns, 
 }
 
 // Copies matrix as a GF2N matrix A, with size entries where the k-th bit (from right) of the j-th entry corresponds to A_jk
-GF2N_matrix::GF2N_matrix(unsigned int const &rows, unsigned int const &columns, unsigned int const *matrix) : rows_n(rows), columns_n(columns), matrix_rows(std::make_unique<unsigned int[]>(rows_n)) {
+GF2N_matrix::GF2N_matrix(unsigned int const &rows, unsigned int const &columns, unsigned int const *matrix) : rows_n(rows), columns_n(columns), matrix_rows(rows) {
     unsigned int mask = (1 << columns_n) - 1;
     for (int j = 0; j < rows_n; j++) {
         matrix_rows[j] = matrix[j] & mask;
@@ -22,12 +22,12 @@ GF2N_matrix::GF2N_matrix(unsigned int const &rows, unsigned int const &columns, 
 }
 
 // Copies matrix as a GF2N matrix A, with size entries where the k-th bit (from right) of the j-th entry corresponds to A_jk. Invalidates matrix to avoid copying when possible
-GF2N_matrix::GF2N_matrix(unsigned int const &rows, unsigned int const &columns, std::unique_ptr<unsigned int[]> &matrix) : rows_n(rows), columns_n(columns) {
+GF2N_matrix::GF2N_matrix(unsigned int const &rows, unsigned int const &columns, std::vector<unsigned int> &matrix) : rows_n(rows), columns_n(columns) {
     matrix_rows = std::move(matrix);
 }
 
 // Copy constructor
-GF2N_matrix::GF2N_matrix(GF2N_matrix const &other) : rows_n(other.rows_n), columns_n(other.columns_n), matrix_rows(std::make_unique<unsigned int[]>(rows_n)) {
+GF2N_matrix::GF2N_matrix(GF2N_matrix const &other) : rows_n(other.rows_n), columns_n(other.columns_n), matrix_rows(other.rows_n) {
     for (int j = 0; j < rows_n; j++) {
         matrix_rows[j] = other.matrix_rows[j];
     }
@@ -59,11 +59,9 @@ unsigned int GF2N_matrix::lmult(unsigned int const &vec) const {
 GF2N_matrix GF2N_matrix::mult(GF2N_matrix const &other) const {
     GF2N_matrix mult(rows_n, other.columns_n, 0u);
     if (columns_n == other.rows_n) {
-        unsigned int left_row = 0;
         for (int j = 0; j < rows_n; j++) {
-            left_row = matrix_rows[j];
             for (int k = 0; k < columns_n; k++) {
-                mult[j] ^= get_bit(left_row, k) * other[k];
+                mult[j] ^= get_bit(matrix_rows[j], k) * other[k];
             }
         }
     }
@@ -87,13 +85,13 @@ GF2N_matrix&& GF2N_matrix::set_zero() && {
 }
 
 // Copies in_coeffs to this.coeffs. Invalidates in_rows to avoid copying
-GF2N_matrix& GF2N_matrix::set_coeffs(std::unique_ptr<unsigned int[]> &in_rows) & {
+GF2N_matrix& GF2N_matrix::set_coeffs(std::vector<unsigned int> &in_rows) & {
     matrix_rows = std::move(in_rows);
     return *this;
 }
 
 // Copies in_coeffs to this.coeffs. Invalidates in_rows to avoid copying
-GF2N_matrix&& GF2N_matrix::set_coeffs(std::unique_ptr<unsigned int[]> &in_rows) && {
+GF2N_matrix&& GF2N_matrix::set_coeffs(std::vector<unsigned int> &in_rows) && {
     matrix_rows = std::move(in_rows);
     return std::move(*this);
 }
@@ -155,6 +153,7 @@ GF2N_matrix GF2N_matrix::row_echelon() const {
     return row_echelon;
 }
 
+// Row reduces to row-echelon form in place
 void GF2N_matrix::row_reduce() {
     unsigned int pivot = 1 << (columns_n - 1);
     unsigned int current_pivot_row = 0;
@@ -188,6 +187,7 @@ unsigned int GF2N_matrix::rank_in_place() {
     return rank;
 }
 
+// Returns the rank of this
 unsigned int GF2N_matrix::rank() const {
     GF2N_matrix row_echelon = this->row_echelon();
     unsigned int rank = 0;
@@ -202,11 +202,11 @@ std::pair<unsigned int, unsigned int> GF2N_matrix::size() const {
     return std::pair<unsigned int, unsigned int>(rows_n, columns_n);
 }
 
-// Assignment operator, moves other.coeffs to this. If other.size != size, it does nothing
+// Assignment operator, moves other.coeffs to this
 GF2N_matrix& GF2N_matrix::operator=(GF2N_matrix &&other) {
-    if (other.rows_n == rows_n) {
-        matrix_rows = std::move(other.matrix_rows);
-    }
+    rows_n = other.rows_n;
+    columns_n = other.columns_n;
+    matrix_rows = std::move(other.matrix_rows);
     return *this;
 }
 

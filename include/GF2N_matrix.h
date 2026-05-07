@@ -1,6 +1,6 @@
 #ifndef GF2N_MATRIX
 #define GF2N_MATRIX
-#include<memory>
+#include<vector>
 #include<utility> // std::pair
 #include<Eigen/Dense>
 
@@ -11,7 +11,7 @@ public:
     // Copies matrix as a GF2N matrix A, with size entries where the k-th bit (from right) of the j-th entry corresponds to A_jk
     GF2N_matrix(unsigned int const &rows, unsigned int const &columns, unsigned int const *matrix);
     // Copies matrix as a GF2N matrix A, with size entries where the k-th bit (from right) of the j-th entry corresponds to A_jk. Invalidates matrix to avoid copying when possible
-    GF2N_matrix(unsigned int const &rows, unsigned int const &columns, std::unique_ptr<unsigned int[]> &matrix);
+    GF2N_matrix(unsigned int const &rows, unsigned int const &columns, std::vector<unsigned int> &matrix);
     // Copy constructor
     GF2N_matrix(GF2N_matrix const &other);
     // Move constructor
@@ -27,9 +27,9 @@ public:
     // Sets all rows of this to zero
     GF2N_matrix&& set_zero() &&;
     // Copies in_coeffs to this.coeffs. Invalidates in_rows to avoid copying
-    GF2N_matrix& set_coeffs(std::unique_ptr<unsigned int[]> &in_rows) &;
+    GF2N_matrix& set_coeffs(std::vector<unsigned int> &in_rows) &;
     // Copies in_coeffs to this.coeffs. Invalidates in_rows to avoid copying
-    GF2N_matrix&& set_coeffs(std::unique_ptr<unsigned int[]> &in_rows) &&;
+    GF2N_matrix&& set_coeffs(std::vector<unsigned int> &in_rows) &&;
     // Returns the inverse of this matrix, by row-reduction. If this is not invertible, it is not a true inverse
     GF2N_matrix inverse() const;
     // Returns the row-echelon form of this matrix
@@ -61,9 +61,9 @@ public:
     // Multiplies this*other in place
     GF2N_matrix& operator*=(GF2N_matrix const &other);
 private:
-    std::unique_ptr<unsigned int[]> matrix_rows;
-    unsigned int const rows_n;
-    unsigned int const columns_n;
+    unsigned int rows_n;
+    unsigned int columns_n;
+    std::vector<unsigned int> matrix_rows;
 };
 
 #endif
