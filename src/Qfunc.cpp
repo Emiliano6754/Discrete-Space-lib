@@ -81,7 +81,8 @@ void save_Qfunc(const Eigen::MatrixXd &Qfunc, const std::string &filename) {
     std::ofstream output_file(cwd.string()+"/data/Qfuncs/"+filename,std::ofstream::out|std::ofstream::ate|std::ofstream::trunc);
     Eigen::IOFormat FullPrecision(Eigen::FullPrecision,0,"\n");
     if (output_file.is_open()) {
-        output_file << Qfunc.format(FullPrecision) << std::endl;
+        output_file << Qfunc.format(FullPrecision) << "\n";
+        output_file.close();
     } else {
         std::cout << "Could not save Qfunc" << std::endl;
     }

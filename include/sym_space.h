@@ -149,6 +149,7 @@ void save_sym_func(const Eigen::Tensor<T,3> &sym_func, const std::string &file_p
     if (output_file.is_open()) {
         Eigen::TensorIOFormat csv_format = Eigen::TensorIOFormat(/*separator=*/{",\n", ""}, /*prefix=*/{"", ""}, /*suffix=*/{"", ""}, /*precision=*/Eigen::FullPrecision, /*flags=*/0, /*tenPrefix=*/"", /*tenSuffix=*/"");
         output_file << sym_func.format(csv_format);
+        output_file.close();
     } else {
         std::cout << "Could not save symmetric function in /data/" << file_path_name << std::endl;
     }
