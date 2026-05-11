@@ -45,13 +45,12 @@ unsigned int polynomial::rank() const {
     return n_rank;
 }
 
-// Returns this evaluated at x
+// Returns this evaluated at x, evaluated using Horner's method
 double polynomial::operator()(int const &x) const {
-    double result = coeffs[0];
-    double current_x = x;
-    for (int j = 1; j <= n_rank; j++) {
-        result += coeffs[j] * current_x;
-        current_x *= x;
+    double result = coeffs[n_rank];
+    for (int j = n_rank - 1; j >= 0; j--) {
+        result *= x;
+        result += coeffs[j];
     }
     return result;
 }
