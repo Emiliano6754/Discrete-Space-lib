@@ -61,7 +61,8 @@ static void for_all_lClifford_symQ(const unsigned int &n_qubits, const unsigned 
                                 beta_p = beta ^ nu;
                                 alpha_pp = alpha_p & (~gamma) | (beta_p & gamma); 
                                 beta_pp = beta_p & (~gamma) | (alpha_p & gamma); 
-                                sym_Qfunc(std::popcount(alpha_pp), std::popcount(beta_pp), std::popcount(alpha_pp ^ beta_pp)) += Qfunc(alpha, beta); // Should test if it is faster to make the sums in symQfunc or Qfunc
+                                // sym_Qfunc(std::popcount(alpha_pp), std::popcount(beta_pp), std::popcount(alpha_pp ^ beta_pp)) += Qfunc(alpha, beta); // Should test if it is faster to make the sums in symQfunc or Qfunc
+                                sym_Qfunc(std::popcount(alpha), std::popcount(beta), std::popcount(alpha ^ beta)) += Qfunc(alpha_pp, beta_pp);
                             }
                     }
                     operate_symQ(sym_Qfunc, thread_vars, mu, nu, gamma);

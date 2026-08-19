@@ -63,14 +63,14 @@ template<typename T>
 std::vector<T> const& cached_power_buffer(T const &var, unsigned int const &max_power) {
     static std::vector<T> buffer(max_power + 1);
     static T current_var = 1;
-    static unsigned int current_max_power = 1;
+    static unsigned int current_max_power = 0;
 
     if (var != current_var) {
         current_var = var;
         buffer.clear();
         buffer.reserve(max_power + 1);
         buffer.push_back(1);
-        current_max_power = 1;
+        current_max_power = 0;
     }
     if (max_power != current_max_power) {
         buffer.reserve(max_power + 1);
